@@ -1,0 +1,54 @@
+<div [class]="isDark ? 'min-h-screen bg-slate-900 text-slate-200' : 'min-h-screen bg-slate-50 text-slate-800'">
+  <!-- Header -->
+  <header [class]="isDark
+    ? 'bg-slate-800 border-b border-slate-700 px-6 py-3'
+    : 'bg-white border-b border-slate-200 px-6 py-3 shadow-sm'">
+    <div class="flex items-center justify-between max-w-screen-2xl mx-auto">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">&#x1F9ED;</span>
+        <h1 [class]="isDark ? 'text-xl font-bold text-white' : 'text-xl font-bold text-slate-900'">
+          {{ i18n.t('app.title') }}
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <nav [class]="isDark ? 'flex gap-4 text-sm text-slate-400' : 'flex gap-4 text-sm text-slate-500'">
+          <a routerLink="/visualize" routerLinkActive="text-blue-500 font-medium"
+            class="hover:text-blue-500 cursor-pointer transition-colors">{{ i18n.t('nav.visualize') }}</a>
+          <a routerLink="/compare" routerLinkActive="text-blue-500 font-medium"
+            class="hover:text-blue-500 cursor-pointer transition-colors">{{ i18n.t('nav.compare') }}</a>
+          <a routerLink="/playground" routerLinkActive="text-blue-500 font-medium"
+            class="hover:text-blue-500 cursor-pointer transition-colors">{{ i18n.t('nav.playground') }}</a>
+        </nav>
+
+        <div class="flex items-center gap-2 ml-4 border-l border-slate-600 pl-4">
+          <!-- Help button -->
+          <button (click)="helper.start()"
+            [class]="isDark
+              ? 'px-2 py-1 rounded text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors'
+              : 'px-2 py-1 rounded text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors'"
+            title="Help">&#x2753;</button>
+
+          <button (click)="toggleTheme()"
+            [class]="isDark
+              ? 'px-2 py-1 rounded text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors'
+              : 'px-2 py-1 rounded text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors'"
+            [title]="isDark ? 'Switch to light' : 'Switch to dark'"
+          >{{ isDark ? '&#x2600;&#xFE0F;' : '&#x1F319;' }}</button>
+
+          <button (click)="toggleLang()"
+            [class]="isDark
+              ? 'px-2 py-1 rounded text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium transition-colors'
+              : 'px-2 py-1 rounded text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition-colors'"
+          >{{ langLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page content via router -->
+  <router-outlet />
+</div>
+
+<!-- Helper overlay (global) -->
+<app-helper-overlay></app-helper-overlay>

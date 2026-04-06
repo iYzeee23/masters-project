@@ -1,0 +1,38 @@
+# System files
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Environment
+.env
+*.env.local
+
+# Node
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Angular
+.angular/
+
+# Tailwind output (generated)
+src/tailwind-output.css
+
+# Logs
+npm-debug.log*
+*.log
