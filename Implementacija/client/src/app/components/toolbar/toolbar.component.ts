@@ -36,7 +36,7 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
         <div class="flex items-center gap-3">
 
           <!-- Algorithm -->
-          <div class="relative">
+          <div class="relative" data-help="algorithm">
             <button (click)="togglePopup('algorithm')"
               [class]="isDark
                 ? 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-stone-200 bg-stone-800 hover:bg-stone-700 border border-stone-700 transition-all'
@@ -67,23 +67,25 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
           <div [class]="isDark ? 'w-px h-8 bg-stone-800' : 'w-px h-8 bg-stone-200'"></div>
 
           <!-- Playback -->
+          <div data-help="playback" class="flex items-center gap-1">
           <button (click)="onVisualize()" [disabled]="vizState === 'running'"
             class="text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-md disabled:opacity-40"
             style="background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 15px rgba(110,71,59,0.3);">
-            ▶ Play
+            {{ i18n.t('toolbar.play') }}
           </button>
           <button (click)="onPause()" [disabled]="vizState !== 'running'"
-            [class]="btnClass" class="px-4 py-3 rounded-xl text-sm font-medium transition-all">⏸ Pause</button>
+            [class]="btnClass" class="px-4 py-3 rounded-xl text-sm font-medium transition-all">{{ i18n.t('toolbar.pause') }}</button>
           <button (click)="onStep()" [disabled]="vizState === 'running' || vizState === 'finished'"
-            [class]="btnClass" class="px-4 py-3 rounded-xl text-sm font-medium transition-all">⏭ Step</button>
+            [class]="btnClass" class="px-4 py-3 rounded-xl text-sm font-medium transition-all">{{ i18n.t('toolbar.step') }}</button>
           <button (click)="onSkipToEnd()" [disabled]="vizState === 'finished'"
-            [class]="btnClass" class="px-4 py-3 rounded-xl text-sm font-medium transition-all">⏩ End</button>
+            [class]="btnClass" class="px-4 py-3 rounded-xl text-sm font-medium transition-all">{{ i18n.t('toolbar.end') }}</button>
+          </div>
 
           <!-- Divider -->
           <div [class]="isDark ? 'w-px h-8 bg-stone-800' : 'w-px h-8 bg-stone-200'"></div>
 
           <!-- Tools -->
-          <div class="relative">
+          <div class="relative" data-help="tools">
             <button (click)="togglePopup('tools')"
               [class]="activePopup === 'tools' ? activeBtnClass : btnClass"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
@@ -117,11 +119,11 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
           </div>
 
           <!-- Speed -->
-          <div class="relative">
+          <div class="relative" data-help="speed">
             <button (click)="togglePopup('speed')"
               [class]="btnClass"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-              ⚡ Speed
+              ⚡ {{ i18n.t('controls.speed') }}
               <span class="text-xs opacity-50">▾</span>
             </button>
 
@@ -146,11 +148,11 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
           </div>
 
           <!-- Settings -->
-          <div class="relative">
+          <div class="relative" data-help="settings">
             <button (click)="togglePopup('settings')"
               [class]="btnClass"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-              ⚙ Settings
+              ⚙ {{ i18n.t('toolbar.settings').replace('⚙ ', '') }}
               <span class="text-xs opacity-50">▾</span>
             </button>
 
@@ -202,11 +204,11 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
         <div class="flex items-center gap-3">
 
           <!-- Generators -->
-          <div class="relative">
+          <div class="relative" data-help="maps">
             <button (click)="togglePopup('generators')"
               [class]="btnClass"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-              🗺 Maps
+              🗺 {{ i18n.t('toolbar.maps').replace('🗺 ', '') }}
               <span class="text-xs opacity-50">▾</span>
             </button>
 
@@ -230,7 +232,7 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
           </div>
 
           <!-- AI -->
-          <div class="relative">
+          <div class="relative" data-help="ai">
             <button (click)="togglePopup('ai')"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-400 hover:from-violet-500/20 hover:to-purple-500/20 border border-violet-500/20 transition-all">
               ✦ AI
@@ -316,11 +318,11 @@ type PopupType = 'algorithm' | 'tools' | 'speed' | 'settings' | 'ai' | 'generato
           <!-- Actions -->
           <button (click)="onReset()"
             [class]="isDark ? 'text-sm text-stone-500 hover:text-stone-300 px-3 py-2 rounded-xl hover:bg-stone-800 transition-all' : 'text-sm text-stone-400 hover:text-stone-700 px-3 py-2 rounded-xl hover:bg-stone-100 transition-all'">
-            ↺ Reset
+            {{ i18n.t('toolbar.reset') }}
           </button>
           <button (click)="onClearGrid()"
             [class]="isDark ? 'text-sm text-stone-500 hover:text-rose-400 px-3 py-2 rounded-xl hover:bg-stone-800 transition-all' : 'text-sm text-stone-400 hover:text-rose-500 px-3 py-2 rounded-xl hover:bg-stone-100 transition-all'">
-            ✕ Clear
+            {{ i18n.t('toolbar.clear') }}
           </button>
         </div>
       </div>

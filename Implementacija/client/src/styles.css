@@ -44,6 +44,91 @@ html:not(.dark) body {
 }
 
 /* ============================================================
+   INTERACTIVE HOVER EFFECTS — Premium feel
+   ============================================================ */
+
+/* Selection color */
+::selection {
+  background-color: rgba(110, 71, 59, 0.25);
+  color: inherit;
+}
+
+/* Smooth global transitions */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Universal subtle hover zoom for all visible elements */
+h1, h2, h3, h4, h5, h6,
+p, span, label, div[style*="border-radius"],
+.stat-card, .leaderboard-row {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Interactive containers — cards, stat boxes, info rows */
+div[onmouseover],
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease !important;
+}
+
+/* All text inputs, email, password, textareas */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+textarea:hover,
+select:hover {
+  transform: scale(1.015);
+  box-shadow: 0 2px 12px rgba(110, 71, 59, 0.08);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  transform: scale(1.015);
+  box-shadow: 0 0 0 3px rgba(110, 71, 59, 0.15), 0 2px 12px rgba(110, 71, 59, 0.08);
+}
+
+/* All buttons */
+button,
+a[routerLink] {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, opacity 0.2s ease !important;
+}
+
+button:hover,
+a[routerLink]:hover {
+  transform: scale(1.04) !important;
+}
+
+button:active,
+a[routerLink]:active {
+  transform: scale(0.97) !important;
+}
+
+/* Placeholder styling */
+::placeholder {
+  color: #AE9D8D;
+  opacity: 0.7;
+}
+
+html.dark ::placeholder {
+  color: #8B7460;
+  opacity: 0.6;
+}
+
+/* ============================================================
    ANIMATIONS
    ============================================================ */
 
@@ -114,18 +199,18 @@ html {
   scrollbar-gutter: stable;
 }
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 html.dark ::-webkit-scrollbar-thumb {
-  background: #655642;
-  border-radius: 3px;
+  background: linear-gradient(180deg, #6E473B, #554536);
+  border-radius: 4px;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #D7CABC;
-  border-radius: 3px;
+  background: linear-gradient(180deg, #C4B5A5, #D7CABC);
+  border-radius: 4px;
 }
 
 /* ============================================================

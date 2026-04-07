@@ -6,6 +6,8 @@ export interface UserProfile {
   id: string;
   username: string;
   email: string;
+  firstName: string;
+  lastName: string;
   avatarUrl: string;
 }
 
@@ -18,6 +20,7 @@ export interface AuthResponse {
 export class AuthService {
   private readonly API = 'http://localhost:3000/api/auth';
   private tokenKey = 'pf-token';
+  private userKey = 'pf-user';
   private lastActivityKey = 'pf-last-activity';
   private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
   private activityTimer: any = null;
@@ -30,9 +33,9 @@ export class AuthService {
     this.setupActivityTracking();
   }
 
-  register(username: string, email: string, password: string): Observable<AuthResponse> {
+  register(username: string, email: string, password: string, firstName = '', lastName = ''): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${this.API}/register`, { username, email, password })
+      .post<AuthResponse>(`${this.API}/register`, { username, email, password, firstName, lastName })
       .pipe(tap((res) => this.handleAuth(res)));
   }
 
@@ -44,6 +47,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
     localStorage.removeItem(this.lastActivityKey);
     this.user$.next(null);
     this.isLoggedIn$.next(false);
@@ -64,6 +68,7 @@ export class AuthService {
 
   private handleAuth(res: AuthResponse): void {
     localStorage.setItem(this.tokenKey, res.token);
+    localStorage.setItem(this.userKey, JSON.stringify(res.user));
     this.touchActivity();
     this.user$.next(res.user);
     this.isLoggedIn$.next(true);
@@ -86,18 +91,31 @@ export class AuthService {
 
     this.touchActivity();
 
+    // Immediately restore cached user + mark logged in
+    this.isLoggedIn$.next(true);
+    const cachedUser = localStorage.getItem(this.userKey);
+    if (cachedUser) {
+      try { this.user$.next(JSON.parse(cachedUser)); } catch { /* ignore */ }
+    }
+
+    // Refresh user data from server in background
     this.http
       .get<UserProfile>(`${this.API}/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .pipe(
         tap((user) => {
+          localStorage.setItem(this.userKey, JSON.stringify(user));
           this.user$.next(user);
-          this.isLoggedIn$.next(true);
           this.startActivityTimer();
         }),
-        catchError(() => {
-          // Don't logout on network errors — keep token, just mark as not loaded yet
+        catchError((err) => {
+          // Server responded with error (401, 404) — user/token invalid, logout
+          if (err.status === 401 || err.status === 404) {
+            this.logout();
+            window.location.href = '/auth';
+          }
+          // Network errors (status 0) — keep token, maybe server is starting up
           return of(null);
         }),
       )

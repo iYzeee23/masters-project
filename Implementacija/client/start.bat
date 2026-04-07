@@ -1,11 +1,10 @@
 @echo off
 REM ============================================================
 REM Start Frontend (Tailwind + Angular)
-REM Run from: c:\Fakultet\Zavrsni\Implementacija
 REM ============================================================
 echo.
 echo [CLIENT] Building Tailwind CSS...
-cd /d "%~dp0client"
+cd /d "%~dp0"
 call npx @tailwindcss/cli -i src/styles.css -o src/tailwind-output.css 2>nul
 echo [CLIENT] Tailwind done!
 echo.

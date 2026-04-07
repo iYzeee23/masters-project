@@ -11,6 +11,8 @@ const registerSchema = z.object({
   username: z.string().min(3).max(30).trim(),
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(6).max(100),
+  firstName: z.string().max(50).trim().optional().default(''),
+  lastName: z.string().max(50).trim().optional().default(''),
 });
 
 const loginSchema = z.object({
@@ -27,7 +29,7 @@ router.post('/register', async (req: Request, res: Response) => {
       return;
     }
 
-    const { username, email, password } = parsed.data;
+    const { username, email, password, firstName, lastName } = parsed.data;
 
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
@@ -38,7 +40,7 @@ router.post('/register', async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const user = await User.create({ username, email, passwordHash });
+    const user = await User.create({ username, email, firstName, lastName, passwordHash });
 
     const secret = process.env.JWT_SECRET || 'dev-secret';
     const token = jwt.sign({ userId: user._id }, secret, { expiresIn: '7d' });
@@ -49,6 +51,8 @@ router.post('/register', async (req: Request, res: Response) => {
         id: user._id,
         username: user.username,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         avatarUrl: user.avatarUrl,
       },
     });
@@ -88,6 +92,8 @@ router.post('/login', async (req: Request, res: Response) => {
         id: user._id,
         username: user.username,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         avatarUrl: user.avatarUrl,
       },
     });
@@ -109,6 +115,8 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
       id: user._id,
       username: user.username,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       avatarUrl: user.avatarUrl,
     });
   } catch (err) {

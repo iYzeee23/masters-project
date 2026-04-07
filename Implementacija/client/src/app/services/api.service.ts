@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, from, switchMap } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -82,10 +82,51 @@ export class ApiService {
   // ============================================================
 
   uploadAvatar(file: File): Observable<{ avatarUrl: string }> {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    return this.http.post<{ avatarUrl: string }>(`${this.API}/upload/avatar`, formData, {
-      headers: this.headers,
+    const MAX_SIZE = 1024 * 1024; // 1MB
+    return from(file.size > MAX_SIZE ? this.compressImage(file, MAX_SIZE) : Promise.resolve(file)).pipe(
+      switchMap((compressed) => {
+        const formData = new FormData();
+        formData.append('avatar', compressed);
+        const token = this.auth.getToken();
+        const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+        return this.http.post<{ avatarUrl: string }>(`${this.API}/upload/avatar`, formData, { headers });
+      }),
+    );
+  }
+
+  private compressImage(file: File, maxBytes: number): Promise<File> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        const maxDim = 800;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+        let quality = 0.8;
+        const tryCompress = () => {
+          canvas.toBlob((blob) => {
+            if (!blob) { resolve(file); return; }
+            if (blob.size <= maxBytes || quality <= 0.3) {
+              resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            } else {
+              quality -= 0.1;
+              tryCompress();
+            }
+          }, 'image/jpeg', quality);
+        };
+        tryCompress();
+      };
+      img.onerror = () => resolve(file);
+      img.src = url;
     });
   }
 }

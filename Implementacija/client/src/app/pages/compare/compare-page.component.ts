@@ -33,7 +33,7 @@ interface CompareResult {
     <div class="flex gap-4 p-4 max-w-screen-2xl mx-auto">
       <!-- Sidebar -->
       <aside class="w-80 flex-shrink-0">
-        <div [class]="isDark
+        <div data-help="compare-sidebar" [class]="isDark
           ? 'flex flex-col gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700'
           : 'flex flex-col gap-4 p-4 bg-white rounded-lg border border-slate-200 shadow-sm'">
 
@@ -85,7 +85,7 @@ interface CompareResult {
           </div>
 
           <!-- Run Compare -->
-          <button (click)="runCompare()"
+          <button (click)="runCompare()" data-help="compare-run"
             [disabled]="selectedAlgorithms.size === 0 || isRunning"
             class="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2.5 rounded text-sm font-medium transition-colors">
             {{ isRunning ? '⏳ ...' : '▶ Pokreni poređenje' }}

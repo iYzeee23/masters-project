@@ -5,10 +5,11 @@ import { PlaygroundPageComponent } from './pages/playground/playground-page.comp
 import { AuthPageComponent } from './pages/auth/auth-page.component';
 import { ProfilePageComponent } from './pages/profile/profile-page.component';
 import { authGuard } from './guards/auth.guard';
+import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'visualize', pathMatch: 'full' },
-  { path: 'auth', component: AuthPageComponent },
+  { path: 'auth', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'visualize', component: VisualizePageComponent, canActivate: [authGuard] },
   { path: 'compare', component: ComparePageComponent, canActivate: [authGuard] },
   { path: 'playground', component: PlaygroundPageComponent, canActivate: [authGuard] },

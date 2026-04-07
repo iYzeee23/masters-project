@@ -35,7 +35,7 @@ interface PlaygroundResult {
     <div class="flex gap-4 p-4 max-w-screen-2xl mx-auto">
       <!-- Sidebar -->
       <aside class="w-80 flex-shrink-0">
-        <div [class]="isDark
+        <div data-help="playground-sidebar" [class]="isDark
           ? 'flex flex-col gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700'
           : 'flex flex-col gap-4 p-4 bg-white rounded-lg border border-slate-200 shadow-sm'">
 
