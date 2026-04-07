@@ -14,7 +14,7 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email().trim().toLowerCase(),
+  username: z.string().min(3).trim(),
   password: z.string(),
 });
 
@@ -66,8 +66,8 @@ router.post('/login', async (req: Request, res: Response) => {
       return;
     }
 
-    const { email, password } = parsed.data;
-    const user = await User.findOne({ email });
+    const { username, password } = parsed.data;
+    const user = await User.findOne({ username });
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;

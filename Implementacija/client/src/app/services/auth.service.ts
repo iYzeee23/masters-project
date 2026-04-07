@@ -18,12 +18,16 @@ export interface AuthResponse {
 export class AuthService {
   private readonly API = 'http://localhost:3000/api/auth';
   private tokenKey = 'pf-token';
+  private lastActivityKey = 'pf-last-activity';
+  private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  private activityTimer: any = null;
 
   readonly user$ = new BehaviorSubject<UserProfile | null>(null);
   readonly isLoggedIn$ = new BehaviorSubject<boolean>(false);
 
   constructor(private http: HttpClient) {
     this.loadFromStorage();
+    this.setupActivityTracking();
   }
 
   register(username: string, email: string, password: string): Observable<AuthResponse> {
@@ -32,16 +36,21 @@ export class AuthService {
       .pipe(tap((res) => this.handleAuth(res)));
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
+  login(username: string, password: string): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${this.API}/login`, { email, password })
+      .post<AuthResponse>(`${this.API}/login`, { username, password })
       .pipe(tap((res) => this.handleAuth(res)));
   }
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.lastActivityKey);
     this.user$.next(null);
     this.isLoggedIn$.next(false);
+    if (this.activityTimer) {
+      clearInterval(this.activityTimer);
+      this.activityTimer = null;
+    }
   }
 
   getToken(): string | null {
@@ -55,13 +64,27 @@ export class AuthService {
 
   private handleAuth(res: AuthResponse): void {
     localStorage.setItem(this.tokenKey, res.token);
+    this.touchActivity();
     this.user$.next(res.user);
     this.isLoggedIn$.next(true);
+    this.startActivityTimer();
   }
 
   private loadFromStorage(): void {
     const token = this.getToken();
     if (!token) return;
+
+    // Check inactivity timeout
+    const lastActivity = localStorage.getItem(this.lastActivityKey);
+    if (lastActivity) {
+      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      if (elapsed > this.INACTIVITY_TIMEOUT) {
+        this.logout();
+        return;
+      }
+    }
+
+    this.touchActivity();
 
     this.http
       .get<UserProfile>(`${this.API}/me`, {
@@ -71,12 +94,42 @@ export class AuthService {
         tap((user) => {
           this.user$.next(user);
           this.isLoggedIn$.next(true);
+          this.startActivityTimer();
         }),
         catchError(() => {
-          this.logout();
+          // Don't logout on network errors — keep token, just mark as not loaded yet
           return of(null);
         }),
       )
       .subscribe();
+  }
+
+  private touchActivity(): void {
+    localStorage.setItem(this.lastActivityKey, Date.now().toString());
+  }
+
+  private setupActivityTracking(): void {
+    if (typeof window === 'undefined') return;
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(evt => {
+      window.addEventListener(evt, () => {
+        if (this.isLoggedIn$.getValue()) {
+          this.touchActivity();
+        }
+      }, { passive: true });
+    });
+  }
+
+  private startActivityTimer(): void {
+    if (this.activityTimer) clearInterval(this.activityTimer);
+    this.activityTimer = setInterval(() => {
+      const lastActivity = localStorage.getItem(this.lastActivityKey);
+      if (!lastActivity) return;
+      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      if (elapsed > this.INACTIVITY_TIMEOUT) {
+        this.logout();
+        window.location.href = '/auth';
+      }
+    }, 30_000); // check every 30 seconds
   }
 }

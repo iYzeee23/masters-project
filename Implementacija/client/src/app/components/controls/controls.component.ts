@@ -13,190 +13,193 @@ import {
   AlgorithmType, HeuristicType, NeighborMode,
   AlgorithmOptions, VisualizationState,
 } from '@shared/types';
-import { ALGORITHM_INFO } from '../../algorithms';
 
 @Component({
   selector: 'app-controls',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div [class]="isDark
-      ? 'flex flex-col gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700'
-      : 'flex flex-col gap-4 p-4 bg-white rounded-lg border border-slate-200 shadow-sm'">
+    <div class="flex flex-col gap-2">
 
-      <!-- Algorithm Selection -->
-      <div>
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('controls.algorithm') }}
-        </label>
-        <select
-          [(ngModel)]="selectedAlgorithm"
+      <!-- ===== ALGORITHM (always visible) ===== -->
+      <div [class]="cardClass" class="animate-fade-in">
+        <select [(ngModel)]="selectedAlgorithm"
           [class]="isDark
-            ? 'w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 text-sm'
-            : 'w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-slate-800 text-sm'"
-        >
+            ? 'w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2.5 text-stone-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all'
+            : 'w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-stone-700 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400/30 outline-none transition-all'">
           <option *ngFor="let algo of algorithms" [value]="algo.value">{{ i18n.t('algo.' + algo.value) }}</option>
         </select>
-        <p [class]="isDark ? 'text-xs text-slate-400 mt-1' : 'text-xs text-slate-500 mt-1'">
+        <p [class]="isDark ? 'text-[11px] text-stone-500 mt-1.5 leading-relaxed' : 'text-[11px] text-stone-400 mt-1.5 leading-relaxed'">
           {{ i18n.t('algo.desc.' + selectedAlgorithm) }}
         </p>
       </div>
 
-      <!-- Heuristic -->
-      <div>
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('controls.heuristic') }}
-        </label>
-        <select
-          [(ngModel)]="selectedHeuristic"
-          [disabled]="!needsHeuristic()"
-          [class]="isDark
-            ? 'w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 text-sm disabled:opacity-50'
-            : 'w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-slate-800 text-sm disabled:opacity-50'"
-        >
-          <option *ngFor="let h of heuristics" [value]="h.value">{{ h.label }}</option>
-        </select>
-      </div>
+      <!-- ===== PLAYBACK (always visible) ===== -->
+      <div [class]="cardClass">
+        <div class="flex gap-1.5">
+          <button (click)="onVisualize()" [disabled]="vizState === 'running'"
+            class="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 disabled:opacity-50 text-white px-3 py-2 rounded-xl text-sm font-medium transition-all shadow-sm shadow-rose-500/20">
+            {{ vizState === 'idle' || vizState === 'finished' ? '?' : '?' }}
+          </button>
+          <button (click)="onPause()" [disabled]="vizState !== 'running'"
+            [class]="isDark
+              ? 'bg-stone-800 border border-stone-700 hover:border-stone-600 disabled:opacity-30 text-stone-300 px-3 py-2 rounded-xl text-sm transition-all'
+              : 'bg-white border border-stone-200 hover:border-stone-300 disabled:opacity-30 text-stone-600 px-3 py-2 rounded-xl text-sm transition-all'">
+            ?
+          </button>
+          <button (click)="onStep()" [disabled]="vizState === 'running' || vizState === 'finished'"
+            [class]="isDark
+              ? 'bg-stone-800 border border-stone-700 hover:border-stone-600 disabled:opacity-30 text-stone-300 px-3 py-2 rounded-xl text-sm transition-all'
+              : 'bg-white border border-stone-200 hover:border-stone-300 disabled:opacity-30 text-stone-600 px-3 py-2 rounded-xl text-sm transition-all'">
+            ?
+          </button>
+          <button (click)="onSkipToEnd()" [disabled]="vizState === 'finished'"
+            [class]="isDark
+              ? 'bg-stone-800 border border-stone-700 hover:border-stone-600 disabled:opacity-30 text-stone-300 px-3 py-2 rounded-xl text-sm transition-all'
+              : 'bg-white border border-stone-200 hover:border-stone-300 disabled:opacity-30 text-stone-600 px-3 py-2 rounded-xl text-sm transition-all'">
+            ?
+          </button>
+        </div>
 
-      <!-- Neighbor Mode -->
-      <div>
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('controls.neighbors') }}
-        </label>
-        <div class="flex gap-2">
-          <button
-            (click)="neighborMode = 4"
-            [class]="neighborMode === 4
-              ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-blue-600 text-white transition-colors'
-              : isDark
-                ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-700 text-slate-300 transition-colors'
-                : 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-200 text-slate-700 transition-colors'"
-          >{{ i18n.t('controls.directions4') }}</button>
-          <button
-            (click)="neighborMode = 8"
-            [class]="neighborMode === 8
-              ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-blue-600 text-white transition-colors'
-              : isDark
-                ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-700 text-slate-300 transition-colors'
-                : 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-200 text-slate-700 transition-colors'"
-          >{{ i18n.t('controls.directions8') }}</button>
+        <!-- Speed slider — minimal -->
+        <input type="range" [(ngModel)]="speed" (ngModelChange)="onSpeedChange($event)"
+          [min]="1" [max]="200" [step]="1"
+          class="w-full mt-2 accent-rose-500 h-1" />
+
+        <!-- Step scrubber -->
+        <div *ngIf="totalSteps > 0" class="mt-1">
+          <input type="range" [ngModel]="currentStep" (ngModelChange)="onJumpToStep($event)"
+            [min]="0" [max]="totalSteps"
+            class="w-full accent-rose-500 h-1" />
+          <span [class]="isDark ? 'text-[10px] text-stone-600' : 'text-[10px] text-stone-400'">
+            {{ currentStep }}/{{ totalSteps }}
+          </span>
         </div>
       </div>
 
-      <!-- Swarm Weight -->
-      <div *ngIf="isSwarmFamily()">
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('controls.swarmWeight') }} (w = {{ swarmWeight }})
-        </label>
-        <input type="range" [(ngModel)]="swarmWeight" [min]="1.1" [max]="10" [step]="0.1" class="w-full" />
-      </div>
-
-      <!-- Editor Tools -->
-      <div>
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-2' : 'block text-sm font-medium text-slate-600 mb-2'">
-          {{ i18n.t('controls.tools') }}
-        </label>
-        <div class="grid grid-cols-3 gap-1.5">
-          <button *ngFor="let tool of getToolsList()"
-            (click)="setEditorTool(tool.value)"
-            [class]="activeTool === tool.value
-              ? 'px-2 py-1.5 rounded text-xs font-medium bg-blue-600 text-white ring-2 ring-blue-400 transition-colors'
-              : isDark
-                ? 'px-2 py-1.5 rounded text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors'
-                : 'px-2 py-1.5 rounded text-xs font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors'"
-          >{{ tool.label }}</button>
-        </div>
-      </div>
-
-      <!-- Weight Value -->
-      <div *ngIf="activeTool === 'weight'">
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('weight.label') }}: {{ weightValue }}
-        </label>
-        <input type="range" [(ngModel)]="weightValue" [min]="2" [max]="10" [step]="1" class="w-full" />
-      </div>
-
-      <!-- Speed Control -->
-      <div>
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('controls.speed') }}: {{ getSpeedLabel() }}
-        </label>
-        <input type="range" [(ngModel)]="speed" (ngModelChange)="onSpeedChange($event)" [min]="1" [max]="200" [step]="1" class="w-full" />
-      </div>
-
-      <!-- Playback Controls -->
-      <div class="flex gap-2">
-        <button (click)="onVisualize()" [disabled]="vizState === 'running'"
-          class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-3 py-2 rounded text-sm font-medium transition-colors">
-          {{ vizState === 'idle' || vizState === 'finished' ? i18n.t('playback.visualize') : i18n.t('playback.resume') }}
+      <!-- ===== TOOLS (collapsible) ===== -->
+      <div [class]="cardClass">
+        <button (click)="showTools = !showTools"
+          class="w-full flex items-center justify-between text-sm font-medium">
+          <span [class]="isDark ? 'text-stone-300' : 'text-stone-600'">{{ i18n.t('controls.tools') }}</span>
+          <span [class]="isDark ? 'text-stone-600 text-xs' : 'text-stone-400 text-xs'"
+            class="transition-transform duration-200"
+            [style.transform]="showTools ? 'rotate(180deg)' : ''">?</span>
         </button>
-        <button (click)="onPause()" [disabled]="vizState !== 'running'"
-          class="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white px-3 py-2 rounded text-sm font-medium transition-colors">&#x23F8;</button>
-        <button (click)="onStep()" [disabled]="vizState === 'running' || vizState === 'finished'"
-          class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-2 rounded text-sm font-medium transition-colors">&#x23ED;</button>
-        <button (click)="onSkipToEnd()" [disabled]="vizState === 'finished'"
-          class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-3 py-2 rounded text-sm font-medium transition-colors">&#x23E9;</button>
+
+        <div *ngIf="showTools" class="mt-2 animate-slide-down">
+          <div class="grid grid-cols-5 gap-1">
+            <button *ngFor="let tool of getToolsList()"
+              (click)="setEditorTool(tool.value)"
+              [class]="activeTool === tool.value
+                ? 'p-2 rounded-lg text-base bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/40 transition-all'
+                : isDark
+                  ? 'p-2 rounded-lg text-base text-stone-500 hover:text-stone-300 hover:bg-stone-800 transition-all'
+                  : 'p-2 rounded-lg text-base text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-all'"
+              [title]="tool.label">
+              {{ tool.icon }}
+            </button>
+          </div>
+
+          <div *ngIf="activeTool === 'weight'" class="mt-2 flex items-center gap-2">
+            <input type="range" [(ngModel)]="weightValue" [min]="2" [max]="10" [step]="1"
+              class="flex-1 accent-rose-500 h-1" />
+            <span [class]="isDark ? 'text-xs text-stone-500 w-4' : 'text-xs text-stone-400 w-4'">{{ weightValue }}</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Reset / Clear -->
-      <div class="flex gap-2">
+      <!-- ===== SETTINGS (collapsible) ===== -->
+      <div [class]="cardClass">
+        <button (click)="showSettings = !showSettings"
+          class="w-full flex items-center justify-between text-sm font-medium">
+          <span [class]="isDark ? 'text-stone-300' : 'text-stone-600'">?</span>
+          <span [class]="isDark ? 'text-stone-600 text-xs' : 'text-stone-400 text-xs'"
+            class="transition-transform duration-200"
+            [style.transform]="showSettings ? 'rotate(180deg)' : ''">?</span>
+        </button>
+
+        <div *ngIf="showSettings" class="mt-2 flex flex-col gap-2 animate-slide-down">
+          <!-- Heuristic -->
+          <select [(ngModel)]="selectedHeuristic" [disabled]="!needsHeuristic()"
+            [class]="isDark
+              ? 'w-full bg-stone-800 border border-stone-700 rounded-lg px-2 py-1.5 text-stone-300 text-xs disabled:opacity-30 outline-none'
+              : 'w-full bg-white border border-stone-200 rounded-lg px-2 py-1.5 text-stone-600 text-xs disabled:opacity-30 outline-none'">
+            <option *ngFor="let h of heuristics" [value]="h.value">{{ h.label }}</option>
+          </select>
+
+          <!-- Neighbors -->
+          <div class="flex gap-1">
+            <button (click)="neighborMode = 4"
+              [class]="neighborMode === 4
+                ? 'flex-1 px-2 py-1 rounded-lg text-xs font-medium bg-rose-500/20 text-rose-400 transition-all'
+                : isDark
+                  ? 'flex-1 px-2 py-1 rounded-lg text-xs text-stone-500 hover:bg-stone-800 transition-all'
+                  : 'flex-1 px-2 py-1 rounded-lg text-xs text-stone-400 hover:bg-stone-100 transition-all'"
+            >4 dir</button>
+            <button (click)="neighborMode = 8"
+              [class]="neighborMode === 8
+                ? 'flex-1 px-2 py-1 rounded-lg text-xs font-medium bg-rose-500/20 text-rose-400 transition-all'
+                : isDark
+                  ? 'flex-1 px-2 py-1 rounded-lg text-xs text-stone-500 hover:bg-stone-800 transition-all'
+                  : 'flex-1 px-2 py-1 rounded-lg text-xs text-stone-400 hover:bg-stone-100 transition-all'"
+            >8 dir</button>
+          </div>
+
+          <!-- Swarm weight -->
+          <div *ngIf="isSwarmFamily()" class="flex items-center gap-2">
+            <span [class]="isDark ? 'text-xs text-stone-500' : 'text-xs text-stone-400'">w</span>
+            <input type="range" [(ngModel)]="swarmWeight" [min]="1.1" [max]="10" [step]="0.1"
+              class="flex-1 accent-rose-500 h-1" />
+            <span [class]="isDark ? 'text-xs text-stone-400 w-6' : 'text-xs text-stone-500 w-6'">{{ swarmWeight }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== METRICS (shows after run) ===== -->
+      <div *ngIf="metrics" [class]="cardClass" class="animate-fade-in">
+        <div class="grid grid-cols-2 gap-y-1.5 text-xs">
+          <span [class]="isDark ? 'text-stone-500' : 'text-stone-400'">{{ i18n.t('metrics.expanded') }}</span>
+          <span [class]="isDark ? 'text-stone-300 text-right font-mono' : 'text-stone-700 text-right font-mono'">{{ metrics.expandedCount }}</span>
+          <span [class]="isDark ? 'text-stone-500' : 'text-stone-400'">{{ i18n.t('metrics.cost') }}</span>
+          <span [class]="isDark ? 'text-stone-300 text-right font-mono' : 'text-stone-700 text-right font-mono'">
+            {{ metrics.cost === Infinity ? '—' : (metrics.cost | number:'1.1-1') }}
+          </span>
+          <span [class]="isDark ? 'text-stone-500' : 'text-stone-400'">{{ i18n.t('metrics.pathFound') }}</span>
+          <span class="text-right">
+            <span [class]="metrics.path ? 'text-emerald-400 text-xs' : 'text-rose-400 text-xs'">
+              {{ metrics.path ? '?' : '?' }}
+            </span>
+          </span>
+        </div>
+
+        <!-- Export -->
+        <div class="flex gap-1 mt-2">
+          <button (click)="onExportJSON()"
+            [class]="isDark ? 'flex-1 text-[10px] text-stone-600 hover:text-stone-400 transition-colors' : 'flex-1 text-[10px] text-stone-400 hover:text-stone-600 transition-colors'">
+            JSON ?
+          </button>
+          <button (click)="onExportCSV()"
+            [class]="isDark ? 'flex-1 text-[10px] text-stone-600 hover:text-stone-400 transition-colors' : 'flex-1 text-[10px] text-stone-400 hover:text-stone-600 transition-colors'">
+            CSV ?
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== ACTIONS (bottom) ===== -->
+      <div class="flex gap-1.5">
         <button (click)="onReset()"
           [class]="isDark
-            ? 'flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded text-sm font-medium transition-colors'
-            : 'flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded text-sm font-medium transition-colors'"
-        >{{ i18n.t('playback.reset') }}</button>
+            ? 'flex-1 text-xs text-stone-600 hover:text-stone-400 py-1.5 transition-colors'
+            : 'flex-1 text-xs text-stone-400 hover:text-stone-600 py-1.5 transition-colors'">
+          ? Reset
+        </button>
         <button (click)="onClearGrid()"
-          class="flex-1 bg-red-700 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-        >{{ i18n.t('playback.clearMap') }}</button>
-      </div>
-
-      <!-- Step Slider -->
-      <div *ngIf="totalSteps > 0">
-        <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-          {{ i18n.t('controls.step') }}: {{ currentStep }} / {{ totalSteps }}
-        </label>
-        <input type="range" [ngModel]="currentStep" (ngModelChange)="onJumpToStep($event)" [min]="0" [max]="totalSteps" class="w-full" />
-      </div>
-
-      <!-- Metrics -->
-      <div *ngIf="metrics" [class]="isDark
-        ? 'bg-slate-900 rounded p-3 border border-slate-700'
-        : 'bg-slate-50 rounded p-3 border border-slate-200'">
-        <h3 [class]="isDark ? 'text-sm font-semibold text-slate-300 mb-2' : 'text-sm font-semibold text-slate-600 mb-2'">
-          {{ i18n.t('metrics.title') }}
-        </h3>
-        <div class="grid grid-cols-2 gap-y-1 text-xs">
-          <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">{{ i18n.t('metrics.expanded') }}:</span>
-          <span [class]="isDark ? 'text-slate-200 text-right' : 'text-slate-800 text-right'">{{ metrics.expandedCount }}</span>
-          <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">{{ i18n.t('metrics.frontier') }}:</span>
-          <span [class]="isDark ? 'text-slate-200 text-right' : 'text-slate-800 text-right'">{{ metrics.maxFrontierSize }}</span>
-          <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">{{ i18n.t('metrics.cost') }}:</span>
-          <span [class]="isDark ? 'text-slate-200 text-right' : 'text-slate-800 text-right'">
-            {{ metrics.cost === Infinity ? i18n.t('metrics.na') : (metrics.cost | number:'1.1-1') }}
-          </span>
-          <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">{{ i18n.t('metrics.pathLength') }}:</span>
-          <span [class]="isDark ? 'text-slate-200 text-right' : 'text-slate-800 text-right'">
-            {{ metrics.path ? metrics.path.length : i18n.t('metrics.na') }}
-          </span>
-          <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">{{ i18n.t('metrics.pathFound') }}:</span>
-          <span class="text-right" [class]="metrics.path ? 'text-green-500' : 'text-red-500'">
-            {{ metrics.path ? i18n.t('metrics.yes') : i18n.t('metrics.no') }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Export -->
-      <div *ngIf="metrics" class="flex gap-2">
-        <button (click)="onExportJSON()"
           [class]="isDark
-            ? 'flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1.5 rounded text-xs font-medium transition-colors'
-            : 'flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1.5 rounded text-xs font-medium transition-colors'"
-        >ðŸ“¥ JSON</button>
-        <button (click)="onExportCSV()"
-          [class]="isDark
-            ? 'flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1.5 rounded text-xs font-medium transition-colors'
-            : 'flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1.5 rounded text-xs font-medium transition-colors'"
-        >ðŸ“¥ CSV</button>
+            ? 'flex-1 text-xs text-stone-600 hover:text-rose-400 py-1.5 transition-colors'
+            : 'flex-1 text-xs text-stone-400 hover:text-rose-500 py-1.5 transition-colors'">
+          ? Clear
+        </button>
       </div>
     </div>
   `,
@@ -215,6 +218,8 @@ export class ControlsComponent implements OnDestroy {
   metrics: any = null;
   Infinity = Infinity;
   isDark = true;
+  showTools = false;
+  showSettings = false;
 
   private subs: Subscription[] = [];
 
@@ -236,6 +241,12 @@ export class ControlsComponent implements OnDestroy {
     { value: HeuristicType.OCTILE, label: 'Octile' },
   ];
 
+  get cardClass(): string {
+    return this.isDark
+      ? 'p-3 bg-stone-800/50 border border-stone-800 rounded-2xl transition-all duration-300'
+      : 'p-3 bg-white/80 border border-stone-200/60 rounded-2xl shadow-sm transition-all duration-300';
+  }
+
   constructor(
     private gridService: GridService,
     private vizService: VisualizationService,
@@ -249,7 +260,7 @@ export class ControlsComponent implements OnDestroy {
       this.vizService.totalSteps$.subscribe(t => this.totalSteps = t),
       this.vizService.metrics$.subscribe(m => this.metrics = m),
       this.themeService.theme$.subscribe(t => this.isDark = t === 'dark'),
-      this.i18n.lang$.subscribe(() => {}), // trigger change detection
+      this.i18n.lang$.subscribe(() => {}),
     );
   }
 
@@ -259,11 +270,11 @@ export class ControlsComponent implements OnDestroy {
 
   getToolsList() {
     return [
-      { value: EditorTool.WALL, label: this.i18n.t('tool.wall') },
-      { value: EditorTool.WEIGHT, label: this.i18n.t('tool.weight') },
-      { value: EditorTool.START, label: this.i18n.t('tool.start') },
-      { value: EditorTool.GOAL, label: this.i18n.t('tool.goal') },
-      { value: EditorTool.ERASE, label: this.i18n.t('tool.erase') },
+      { value: EditorTool.WALL, icon: '?', label: this.i18n.t('tool.wall') },
+      { value: EditorTool.WEIGHT, icon: '?', label: this.i18n.t('tool.weight') },
+      { value: EditorTool.START, icon: '?', label: this.i18n.t('tool.start') },
+      { value: EditorTool.GOAL, icon: '?', label: this.i18n.t('tool.goal') },
+      { value: EditorTool.ERASE, icon: '?', label: this.i18n.t('tool.erase') },
     ];
   }
 
@@ -276,30 +287,17 @@ export class ControlsComponent implements OnDestroy {
     return [AlgorithmType.SWARM, AlgorithmType.CONVERGENT_SWARM].includes(this.selectedAlgorithm);
   }
 
-  setEditorTool(tool: EditorTool): void {
-    this.activeTool = tool;
-  }
+  setEditorTool(tool: EditorTool): void { this.activeTool = tool; }
 
-  getSpeedLabel(): string {
-    if (this.speed <= 10) return this.i18n.t('speed.fast');
-    if (this.speed <= 50) return this.i18n.t('speed.normal');
-    if (this.speed <= 100) return this.i18n.t('speed.slow');
-    return this.i18n.t('speed.verySlow');
-  }
-
-  onSpeedChange(value: number): void {
-    this.vizService.setSpeed(value);
-  }
+  onSpeedChange(value: number): void { this.vizService.setSpeed(value); }
 
   onVisualize(): void {
     const grid = this.gridService.getGrid();
     if (!grid) return;
     if (this.vizState === VisualizationState.IDLE || this.vizState === VisualizationState.FINISHED) {
       const options: AlgorithmOptions = {
-        algorithm: this.selectedAlgorithm,
-        heuristic: this.selectedHeuristic,
-        neighborMode: this.neighborMode,
-        swarmWeight: this.swarmWeight,
+        algorithm: this.selectedAlgorithm, heuristic: this.selectedHeuristic,
+        neighborMode: this.neighborMode, swarmWeight: this.swarmWeight,
       };
       this.vizService.prepare(grid, grid.start, grid.goal, options);
     }
@@ -313,10 +311,8 @@ export class ControlsComponent implements OnDestroy {
     if (!grid) return;
     if (this.vizState === VisualizationState.IDLE) {
       const options: AlgorithmOptions = {
-        algorithm: this.selectedAlgorithm,
-        heuristic: this.selectedHeuristic,
-        neighborMode: this.neighborMode,
-        swarmWeight: this.swarmWeight,
+        algorithm: this.selectedAlgorithm, heuristic: this.selectedHeuristic,
+        neighborMode: this.neighborMode, swarmWeight: this.swarmWeight,
       };
       this.vizService.prepare(grid, grid.start, grid.goal, options);
     }
@@ -328,10 +324,8 @@ export class ControlsComponent implements OnDestroy {
     if (!grid) return;
     if (this.vizState === VisualizationState.IDLE) {
       const options: AlgorithmOptions = {
-        algorithm: this.selectedAlgorithm,
-        heuristic: this.selectedHeuristic,
-        neighborMode: this.neighborMode,
-        swarmWeight: this.swarmWeight,
+        algorithm: this.selectedAlgorithm, heuristic: this.selectedHeuristic,
+        neighborMode: this.neighborMode, swarmWeight: this.swarmWeight,
       };
       this.vizService.prepare(grid, grid.start, grid.goal, options);
     }
@@ -339,34 +333,21 @@ export class ControlsComponent implements OnDestroy {
   }
 
   onReset(): void { this.vizService.reset(); }
-
-  onClearGrid(): void {
-    this.vizService.reset();
-    this.gridService.clearGrid();
-  }
-
+  onClearGrid(): void { this.vizService.reset(); this.gridService.clearGrid(); }
   onJumpToStep(step: number): void { this.vizService.jumpToStep(step); }
 
   onExportJSON(): void {
     if (!this.metrics) return;
     const grid = this.gridService.getGrid();
     this.exportService.addRun({
-      algorithm: this.selectedAlgorithm,
-      heuristic: this.selectedHeuristic,
-      neighborMode: this.neighborMode,
-      swarmWeight: this.swarmWeight,
-      expandedNodes: this.metrics.expandedCount,
-      maxFrontierSize: this.metrics.maxFrontierSize,
+      algorithm: this.selectedAlgorithm, heuristic: this.selectedHeuristic,
+      neighborMode: this.neighborMode, swarmWeight: this.swarmWeight,
+      expandedNodes: this.metrics.expandedCount, maxFrontierSize: this.metrics.maxFrontierSize,
       pathCost: this.metrics.cost === Infinity ? null : this.metrics.cost,
-      pathLength: this.metrics.path?.length ?? null,
-      totalSteps: this.metrics.totalSteps,
-      executionTimeMs: 0,
-      foundPath: !!this.metrics.path,
-      mapRows: grid?.rows ?? 0,
-      mapCols: grid?.cols ?? 0,
-      wallCount: 0,
-      weightedCount: 0,
-      timestamp: new Date().toISOString(),
+      pathLength: this.metrics.path?.length ?? null, totalSteps: this.metrics.totalSteps,
+      executionTimeMs: 0, foundPath: !!this.metrics.path,
+      mapRows: grid?.rows ?? 0, mapCols: grid?.cols ?? 0,
+      wallCount: 0, weightedCount: 0, timestamp: new Date().toISOString(),
     });
     this.exportService.exportJSON();
   }
@@ -375,22 +356,14 @@ export class ControlsComponent implements OnDestroy {
     if (!this.metrics) return;
     const grid = this.gridService.getGrid();
     this.exportService.addRun({
-      algorithm: this.selectedAlgorithm,
-      heuristic: this.selectedHeuristic,
-      neighborMode: this.neighborMode,
-      swarmWeight: this.swarmWeight,
-      expandedNodes: this.metrics.expandedCount,
-      maxFrontierSize: this.metrics.maxFrontierSize,
+      algorithm: this.selectedAlgorithm, heuristic: this.selectedHeuristic,
+      neighborMode: this.neighborMode, swarmWeight: this.swarmWeight,
+      expandedNodes: this.metrics.expandedCount, maxFrontierSize: this.metrics.maxFrontierSize,
       pathCost: this.metrics.cost === Infinity ? null : this.metrics.cost,
-      pathLength: this.metrics.path?.length ?? null,
-      totalSteps: this.metrics.totalSteps,
-      executionTimeMs: 0,
-      foundPath: !!this.metrics.path,
-      mapRows: grid?.rows ?? 0,
-      mapCols: grid?.cols ?? 0,
-      wallCount: 0,
-      weightedCount: 0,
-      timestamp: new Date().toISOString(),
+      pathLength: this.metrics.path?.length ?? null, totalSteps: this.metrics.totalSteps,
+      executionTimeMs: 0, foundPath: !!this.metrics.path,
+      mapRows: grid?.rows ?? 0, mapCols: grid?.cols ?? 0,
+      wallCount: 0, weightedCount: 0, timestamp: new Date().toISOString(),
     });
     this.exportService.exportCSV();
   }

@@ -214,9 +214,13 @@ export class GridRendererService {
           color = c.goal;
         }
 
-        // Draw cell
+        // Draw cell — rounded corners for soft aesthetic
         ctx.fillStyle = color;
-        ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+        const gap = 1;
+        const r = Math.min(4, size * 0.15); // corner radius
+        ctx.beginPath();
+        ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+        ctx.fill();
 
         // Draw weight number if weighted
         if (cell.weight > 1 && cell.type !== CellType.WALL) {
@@ -239,9 +243,13 @@ export class GridRendererService {
     const size = this.cellSize;
     const x = pos.col * size;
     const y = pos.row * size;
+    const gap = 1;
+    const r = Math.min(4, size * 0.15);
 
     this.ctx.fillStyle = bgColor;
-    this.ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+    this.ctx.beginPath();
+    this.ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+    this.ctx.fill();
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = `bold ${Math.max(12, size * 0.45)}px sans-serif`;
     this.ctx.textAlign = 'center';

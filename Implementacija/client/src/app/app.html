@@ -1,54 +1,143 @@
-<div [class]="isDark ? 'min-h-screen bg-slate-900 text-slate-200' : 'min-h-screen bg-slate-50 text-slate-800'">
-  <!-- Header -->
-  <header [class]="isDark
-    ? 'bg-slate-800 border-b border-slate-700 px-6 py-3'
-    : 'bg-white border-b border-slate-200 px-6 py-3 shadow-sm'">
-    <div class="flex items-center justify-between max-w-screen-2xl mx-auto">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">&#x1F9ED;</span>
-        <h1 [class]="isDark ? 'text-xl font-bold text-white' : 'text-xl font-bold text-slate-900'">
-          {{ i18n.t('app.title') }}
-        </h1>
+<div [class]="isDark ? 'min-h-screen text-[#EDE0D0]' : 'min-h-screen text-[#2F241D]'"
+  [style.background-color]="isDark ? '#352B22' : '#F5EFE7'"
+  class="transition-colors duration-500">
+
+  <!-- HEADER -->
+  <header [style.background-color]="isDark ? '#3D3128' : '#FFF9F2'"
+    [style.border-bottom]="isDark ? '1px solid #554536' : '1px solid #D7CABC'"
+    [style.box-shadow]="isDark ? '0 4px 30px rgba(0,0,0,0.35)' : '0 4px 20px rgba(0,0,0,0.08)'"
+    class="px-8 transition-all duration-300"
+    style="padding-top: 20px; padding-bottom: 20px;">
+    <div [class]="isLoggedIn
+      ? 'flex items-center justify-between max-w-screen-2xl mx-auto'
+      : 'flex items-center justify-center'">
+
+      <!-- LEFT: Logo (only when logged in) -->
+      <div *ngIf="isLoggedIn" class="flex items-center gap-5">
+        <a routerLink="/visualize" class="flex items-center gap-3 group cursor-pointer">
+          <svg class="transition-transform duration-300 group-hover:rotate-12" style="width: 26px; height: 26px;"
+            [style.color]="isDark ? '#A78D78' : '#6E473B'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+          <span [style.color]="isDark ? '#EDE0D0' : '#2F241D'"
+            class="text-xl font-bold tracking-tight">
+            Pathfinder
+          </span>
+        </a>
       </div>
 
-      <div class="flex items-center gap-4">
-        <nav [class]="isDark ? 'flex gap-4 text-sm text-slate-400' : 'flex gap-4 text-sm text-slate-500'">
-          <a routerLink="/visualize" routerLinkActive="text-blue-500 font-medium"
-            class="hover:text-blue-500 cursor-pointer transition-colors">{{ i18n.t('nav.visualize') }}</a>
-          <a routerLink="/compare" routerLinkActive="text-blue-500 font-medium"
-            class="hover:text-blue-500 cursor-pointer transition-colors">{{ i18n.t('nav.compare') }}</a>
-          <a routerLink="/playground" routerLinkActive="text-blue-500 font-medium"
-            class="hover:text-blue-500 cursor-pointer transition-colors">{{ i18n.t('nav.playground') }}</a>
-        </nav>
+      <!-- CENTER: Nav (only when logged in) -->
+      <nav *ngIf="isLoggedIn"
+        [style.background-color]="isDark ? '#43372C' : '#EDE4D8'"
+        [style.border]="isDark ? '1px solid #554536' : '1px solid #D7CABC'"
+        [style.box-shadow]="isDark ? '0 2px 10px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.04)'"
+        class="flex items-center rounded-full px-2 py-1.5 gap-1">
+        <a routerLink="/visualize" routerLinkActive="active-pill"
+          [routerLinkActiveOptions]="{exact: false}"
+          [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'"
+          class="px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-80">
+          {{ i18n.t('nav.visualize') }}
+        </a>
+        <a routerLink="/compare" routerLinkActive="active-pill"
+          [routerLinkActiveOptions]="{exact: false}"
+          [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'"
+          class="px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-80">
+          {{ i18n.t('nav.compare') }}
+        </a>
+        <a routerLink="/playground" routerLinkActive="active-pill"
+          [routerLinkActiveOptions]="{exact: false}"
+          [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'"
+          class="px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-80">
+          {{ i18n.t('nav.playground') }}
+        </a>
+      </nav>
 
-        <div class="flex items-center gap-2 ml-4 border-l border-slate-600 pl-4">
-          <!-- Help button -->
-          <button (click)="helper.start()"
-            [class]="isDark
-              ? 'px-2 py-1 rounded text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors'
-              : 'px-2 py-1 rounded text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors'"
-            title="Help">&#x2753;</button>
+      <!-- RIGHT -->
+      <div class="flex items-center gap-3">
 
-          <button (click)="toggleTheme()"
-            [class]="isDark
-              ? 'px-2 py-1 rounded text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors'
-              : 'px-2 py-1 rounded text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors'"
-            [title]="isDark ? 'Switch to light' : 'Switch to dark'"
-          >{{ isDark ? '&#x2600;&#xFE0F;' : '&#x1F319;' }}</button>
+        <!-- Help -->
+        <button *ngIf="isLoggedIn" (click)="helper.start()"
+          [style.color]="isDark ? '#D3C3B0' : '#8F7C6E'"
+          class="p-2.5 rounded-full transition-all duration-200 hover:opacity-70" title="Help">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </button>
 
-          <button (click)="toggleLang()"
-            [class]="isDark
-              ? 'px-2 py-1 rounded text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium transition-colors'
-              : 'px-2 py-1 rounded text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition-colors'"
-          >{{ langLabel }}</button>
-        </div>
+        <!-- Theme -->
+        <button (click)="toggleTheme()"
+          class="flex items-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-80 cursor-pointer"
+          [style.color]="isDark ? '#EDE0D0' : '#2F241D'"
+          [style.background-color]="isDark ? '#2B211A' : '#EDE4D8'"
+          [style.border]="isDark ? '1px solid #554536' : '1px solid #D7CABC'"
+          [style.box-shadow]="isDark ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 6px rgba(0,0,0,0.06)'"
+          style="padding: 10px 16px;">
+          <svg *ngIf="isDark" style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <svg *ngIf="!isDark" style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          {{ isDark ? 'Dark' : 'Light' }}
+        </button>
+
+        <!-- Language -->
+        <button (click)="toggleLang()"
+          class="flex items-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-80 cursor-pointer"
+          [style.color]="isDark ? '#EDE0D0' : '#2F241D'"
+          [style.background-color]="isDark ? '#2B211A' : '#EDE4D8'"
+          [style.border]="isDark ? '1px solid #554536' : '1px solid #D7CABC'"
+          [style.box-shadow]="isDark ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 6px rgba(0,0,0,0.06)'"
+          style="padding: 10px 16px;">
+          <!-- Serbian flag -->
+          <svg *ngIf="langLabel === 'EN'" style="width: 20px; height: 14px; border-radius: 2px; flex-shrink: 0;" viewBox="0 0 20 14">
+            <rect width="20" height="4.67" fill="#C6363C"/>
+            <rect y="4.67" width="20" height="4.67" fill="#0C4076"/>
+            <rect y="9.33" width="20" height="4.67" fill="#FFFFFF"/>
+          </svg>
+          <!-- British flag -->
+          <svg *ngIf="langLabel !== 'EN'" style="width: 20px; height: 14px; border-radius: 2px; flex-shrink: 0;" viewBox="0 0 60 30">
+            <clipPath id="t"><rect width="60" height="30"/></clipPath>
+            <g clip-path="url(#t)">
+              <rect width="60" height="30" fill="#012169"/>
+              <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+              <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4" clip-path="url(#t)"/>
+              <path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/>
+              <path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/>
+            </g>
+          </svg>
+          {{ langLabel === 'EN' ? 'SR' : 'EN' }}
+        </button>
+
+        <!-- Profile (logged in) -->
+        <a *ngIf="isLoggedIn" routerLink="/profile"
+          class="rounded-full overflow-hidden cursor-pointer transition-all duration-200 hover:opacity-80"
+          [style.border]="isDark ? '2px solid #554536' : '2px solid #D7CABC'"
+          [style.box-shadow]="isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 6px rgba(0,0,0,0.06)'"
+          style="width: 38px; height: 38px;">
+          <img *ngIf="user?.avatarUrl" [src]="user!.avatarUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+          <div *ngIf="!user?.avatarUrl"
+            style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;"
+            [style.background-color]="isDark ? '#2E241C' : '#EDE4D8'"
+            [style.color]="isDark ? '#AE9D8D' : '#8F7C6E'">
+            {{ user?.username?.charAt(0)?.toUpperCase() || '?' }}
+          </div>
+        </a>
       </div>
     </div>
   </header>
 
-  <!-- Page content via router -->
-  <router-outlet />
+  <main class="animate-fade-in">
+    <router-outlet />
+  </main>
 </div>
 
-<!-- Helper overlay (global) -->
 <app-helper-overlay></app-helper-overlay>
+
+<style>
+  .active-pill {
+    background-color: #6E473B !important;
+    color: #F0E5D7 !important;
+    box-shadow: 0 2px 10px rgba(110, 71, 59, 0.35);
+  }
+</style>

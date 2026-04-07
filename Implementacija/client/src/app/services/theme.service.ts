@@ -20,38 +20,46 @@ export interface ThemeColors {
   text: string;
 }
 
+// ============================================================
+// WARM ORGANIC MINIMALISM — Design System
+// Light: sand / linen / soft stone
+// Dark:  espresso / walnut / warm charcoal
+// ============================================================
+
 const DARK_COLORS: ThemeColors = {
-  background: '#0f172a',
-  gridLine: '#1e293b',
-  empty: '#1e293b',
-  wall: '#334155',
-  start: '#22c55e',
-  goal: '#ef4444',
-  open: '#3b82f6',
-  closed: '#6366f1',
-  current: '#f59e0b',
-  path: '#facc15',
-  weightLow: '#164e63',
-  weightMed: '#155e75',
-  weightHigh: '#0e7490',
-  text: '#94a3b8',
+  // Canvas grid colors — warm walnut, premium, readable
+  background: '#352B22',   // warm walnut
+  gridLine: '#43372C',     // lighter walnut surface
+  empty: '#3D3128',        // mid walnut
+  wall: '#9E806E',         // sandy taupe (distinct)
+  start: '#7EC856',        // bright warm green
+  goal: '#E87461',         // coral-terra
+  open: '#D4B896',         // warm sand
+  closed: '#8B7460',       // medium taupe
+  current: '#E8B84D',      // bright warm amber
+  path: '#D4917E',         // warm salmon
+  weightLow: '#43372C',    // surface
+  weightMed: '#544536',    // mid border
+  weightHigh: '#655642',   // lighter border
+  text: '#EDE0D0',         // bright cream
 };
 
 const LIGHT_COLORS: ThemeColors = {
-  background: '#f8fafc',
-  gridLine: '#e2e8f0',
-  empty: '#f1f5f9',
-  wall: '#475569',
-  start: '#16a34a',
-  goal: '#dc2626',
-  open: '#60a5fa',
-  closed: '#a78bfa',
-  current: '#f59e0b',
-  path: '#eab308',
-  weightLow: '#a5f3fc',
-  weightMed: '#67e8f9',
-  weightHigh: '#22d3ee',
-  text: '#334155',
+  // Canvas grid colors
+  background: '#F5EFE7',   // warm linen — primary bg
+  gridLine: '#EDE4D8',     // secondary bg
+  empty: '#FFF9F2',        // surface (card)
+  wall: '#8B7262',         // warm medium brown (distinct from goal)
+  start: '#4A8C2A',        // fresh green
+  goal: '#D05040',         // warm red-coral
+  open: '#D8C3B6',         // soft accent
+  closed: '#A78D78',       // taupe
+  current: '#D4952C',      // warm gold
+  path: '#C4A399',         // blush
+  weightLow: '#EDE4D8',    // secondary bg
+  weightMed: '#D7CABC',    // border
+  weightHigh: '#C4B5A5',   // darker border
+  text: '#6E5A4D',         // secondary text
 };
 
 @Injectable({ providedIn: 'root' })

@@ -1,7 +1,17 @@
 @import "tailwindcss";
 @source "./app/**/*.{html,ts}";
 
-/* Global styles */
+/* ============================================================
+   GLOBAL STYLES — Warm Aesthetic Theme
+   ============================================================ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+}
+
 *,
 *::before,
 *::after {
@@ -10,19 +20,171 @@
   padding: 0;
 }
 
-html,
+html {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
   height: 100%;
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html.dark body {
-  background-color: #0f172a;
-  color: #e2e8f0;
+  background-color: #352B22;
+  color: #EDE0D0;
 }
 
 html:not(.dark) body {
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: #F5EFE7;
+  color: #2F241D;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale 0.25s ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.25s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   SMOOTH TRANSITIONS
+   ============================================================ */
+
+button, a, select, input {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Custom scrollbar */
+html {
+  scrollbar-gutter: stable;
+}
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #655642;
+  border-radius: 3px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #D7CABC;
+  border-radius: 3px;
+}
+
+/* ============================================================
+   GLASS EFFECT
+   ============================================================ */
+
+.glass-dark {
+  background: rgba(53, 43, 34, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-light {
+  background: rgba(245, 239, 231, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================================
+   DROPDOWN MENU
+   ============================================================ */
+
+.dropdown-enter {
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Card hover lift */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+/* ============================================================
+   AUTH FORM INPUT STYLES
+   ============================================================ */
+
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"] {
+  box-shadow: 0 3px 12px rgba(0,0,0,0.35), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+html.dark input[type="text"]:focus,
+html.dark input[type="email"]:focus,
+html.dark input[type="password"]:focus {
+  border-color: #6E473B !important;
+  box-shadow: 0 3px 15px rgba(110,71,59,0.3), 0 0 0 3px rgba(110,71,59,0.15);
+}
+
+html:not(.dark) input[type="text"],
+html:not(.dark) input[type="email"],
+html:not(.dark) input[type="password"] {
+  box-shadow: 0 3px 12px rgba(0,0,0,0.07), inset 0 1px 3px rgba(0,0,0,0.03);
+}
+html:not(.dark) input[type="text"]:focus,
+html:not(.dark) input[type="email"]:focus,
+html:not(.dark) input[type="password"]:focus {
+  border-color: #6E473B !important;
+  box-shadow: 0 3px 15px rgba(110,71,59,0.15), 0 0 0 3px rgba(110,71,59,0.08);
 }

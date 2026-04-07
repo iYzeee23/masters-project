@@ -1,0 +1,22 @@
+{
+  "name": "pathfinder-visualizer",
+  "version": "1.0.0",
+  "description": "Full-stack pathfinding visualizer with AI support",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "clean": "rimraf client/dist client/.angular server/dist",
+    "tw": "npx @tailwindcss/cli -i client/src/styles.css -o client/src/tailwind-output.css",
+    "build:client": "npm run tw && npx ng build --project client",
+    "build:server": "npx tsc --project server/tsconfig.json",
+    "build": "npm run build:client && npm run build:server",
+    "start:client": "npx ng serve --project client --port 4200",
+    "start:server": "npx ts-node --project server/tsconfig.json server/src/index.ts",
+    "start": "concurrently -n TW,CLIENT,SERVER -c blue,cyan,yellow \"npm run tw -- --watch\" \"npm run start:client\" \"npm run start:server\"",
+    "dev": "npm run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "rimraf": "^6.0.1"
+  }
+}

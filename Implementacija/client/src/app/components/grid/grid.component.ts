@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { GridService } from '../../services/grid.service';
 import { GridRendererService } from '../../services/grid-renderer.service';
+import { ThemeService } from '../../services/theme.service';
 import { CellType, Position } from '@shared/types';
 
 export enum EditorTool {
@@ -20,7 +21,11 @@ export enum EditorTool {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="relative overflow-auto border border-slate-700 rounded-lg">
+    <div class="rounded-2xl"
+      [style.box-shadow]="isDark
+        ? '0 12px 80px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px #554536'
+        : '0 12px 80px rgba(0,0,0,0.2), 0 4px 30px rgba(0,0,0,0.12), 0 0 0 1px #D7CABC'"
+      style="display: inline-block; overflow: hidden; transition: box-shadow 0.5s ease;">
       <canvas
         #gridCanvas
         (mousedown)="onMouseDown($event)"
@@ -28,7 +33,7 @@ export enum EditorTool {
         (mouseup)="onMouseUp()"
         (mouseleave)="onMouseUp()"
         (contextmenu)="$event.preventDefault()"
-        class="cursor-crosshair"
+        class="cursor-crosshair block"
       ></canvas>
     </div>
   `,
@@ -38,6 +43,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
 
   activeTool: EditorTool = EditorTool.WALL;
   weightValue = 3;
+  isDark = true;
   private isDrawing = false;
   private isDraggingStart = false;
   private isDraggingGoal = false;
@@ -47,13 +53,16 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private gridService: GridService,
     private renderer: GridRendererService,
+    private themeService: ThemeService,
   ) {}
 
   ngOnInit(): void {
-    // Create default grid if none exists
     if (!this.gridService.getGrid()) {
       this.gridService.createGrid(25, 50);
     }
+    this.subs.push(
+      this.themeService.theme$.subscribe(t => this.isDark = t === 'dark'),
+    );
   }
 
   ngAfterViewInit(): void {
@@ -62,6 +71,15 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subs.push(
       this.gridService.grid$.subscribe((grid) => {
         if (grid) {
+          // Auto-size cells to guarantee grid + shadow fits in viewport
+          const headerToolbar = 140;  // header + toolbar height
+          const shadowPadding = 100;  // shadow + padding on all sides
+          const availableWidth = window.innerWidth - shadowPadding;
+          const availableHeight = window.innerHeight - headerToolbar - shadowPadding;
+          const cellW = Math.floor(availableWidth / grid.cols);
+          const cellH = Math.floor(availableHeight / grid.rows);
+          const cellSize = Math.max(10, Math.min(28, cellW, cellH));
+          this.renderer.setCellSize(cellSize);
           this.renderer.setGrid(grid);
         }
       }),
