@@ -223,11 +223,11 @@ export function generateMap(
   }
 }
 
-export const GENERATOR_INFO: Record<GeneratorType, { name: string; nameEn: string; description: string }> = {
-  random: { name: 'Nasumične prepreke', nameEn: 'Random Obstacles', description: 'Nasumično raspoređene prepreke (podešava se gustina %)' },
-  maze: { name: 'Lavirint', nameEn: 'Maze', description: 'Rekurzivna podela prostora, garantovana rešivost' },
-  weighted: { name: 'Težinski teren', nameEn: 'Weighted Terrain', description: 'Zone sa različitim težinama na terenu' },
-  bottleneck: { name: 'Usko grlo', nameEn: 'Bottleneck', description: 'Zid sa jednim uskim prolazom' },
-  city: { name: 'Gradski blokovi', nameEn: 'City Blocks', description: 'Ortogonalni koridori (mreža ulica)' },
-  open: { name: 'Otvoreno polje', nameEn: 'Open Field', description: 'Prazan grid bez prepreka (bazna referenca)' },
+export const GENERATOR_INFO: Record<GeneratorType, { name: string; nameEn: string; short: string; description: string }> = {
+  random: { name: 'Nasumične prepreke', nameEn: 'Random Obstacles', short: 'Random', description: 'Nasumično raspoređene prepreke (podešava se gustina %)' },
+  maze: { name: 'Lavirint', nameEn: 'Maze', short: 'Maze', description: 'Rekurzivna podela prostora, garantovana rešivost' },
+  weighted: { name: 'Težinski teren', nameEn: 'Weighted Terrain', short: 'Weight', description: 'Zone sa različitim težinama na terenu' },
+  bottleneck: { name: 'Usko grlo', nameEn: 'Bottleneck', short: 'Bottle', description: 'Zid sa jednim uskim prolazom' },
+  city: { name: 'Gradski blokovi', nameEn: 'City Blocks', short: 'City', description: 'Ortogonalni koridori (mreža ulica)' },
+  open: { name: 'Otvoreno polje', nameEn: 'Open Field', short: 'Open', description: 'Prazan grid bez prepreka (bazna referenca)' },
 };

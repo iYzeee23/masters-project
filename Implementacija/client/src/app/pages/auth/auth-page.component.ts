@@ -44,13 +44,13 @@ import { TranslationService } from '../../services/translation.service';
             <circle cx="20" cy="32" r="2.5" [attr.fill]="isDark ? '#554536' : '#D7CABC'"/>
             <circle cx="32" cy="32" r="2.5" [attr.fill]="isDark ? '#554536' : '#D7CABC'"/>
             <!-- Path -->
-            <path d="M8 32 L8 20 L20 20 L20 8 L32 8" stroke="#6E473B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 32 L8 20 L20 20 L20 8 L32 8" [attr.stroke]="isDark ? '#EDE0D0' : '#6E473B'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
             <!-- Start & End markers -->
-            <circle cx="8" cy="32" r="4" fill="#6E473B"/>
-            <circle cx="32" cy="8" r="4" fill="#8B5E50"/>
+            <circle cx="8" cy="32" r="4" [attr.fill]="isDark ? '#EDE0D0' : '#6E473B'"/>
+            <circle cx="32" cy="8" r="4" [attr.fill]="isDark ? '#D3C3B0' : '#8B5E50'"/>
           </svg>
           <span style="font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 750; letter-spacing: -0.01em; line-height: 1;"
-            [style.color]="isDark ? '#EDE0D0' : '#2F241D'">
+            [style.color]="isDark ? '#EDE0D0' : '#6E473B'">
             Pathfinder
           </span>
         </div>

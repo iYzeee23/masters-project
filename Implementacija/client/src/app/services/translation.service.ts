@@ -86,6 +86,7 @@ const SR: Translations = {
   'compare.pathLength': 'Dužina',
   'compare.time': 'Vreme (ms)',
   'compare.path': 'Put',
+  'compare.settingsHint': 'Heuristika usmerava pretragu ka cilju. Broj suseda odre\u0111uje smerove kretanja (4 = gore/dole/levo/desno, 8 = + dijagonale).',
 
   // Playground
   'playground.instructions': 'Pokušaj da pronađeš najkraći put! Klikni na ćelije od starta do cilja.',
@@ -103,6 +104,7 @@ const SR: Translations = {
   'playground.penaltyCost': 'Penali (cena):',
   'playground.penaltyMoves': 'Penali (potezi):',
   'playground.noPathExists': 'Nema puta',
+  'playground.speedBonus': 'Bonus (brzina):',
 
   // Controls
   'controls.algorithm': 'Algoritam',
@@ -212,6 +214,7 @@ const EN: Translations = {
   'compare.pathLength': 'Length',
   'compare.time': 'Time (ms)',
   'compare.path': 'Path',
+  'compare.settingsHint': 'Heuristic guides the search toward the goal. Neighbor count determines movement directions (4 = cardinal, 8 = with diagonals).',
 
   // Playground
   'playground.instructions': 'Try to find the shortest path! Click on cells from start to goal.',
@@ -229,6 +232,7 @@ const EN: Translations = {
   'playground.penaltyCost': 'Penalty (cost):',
   'playground.penaltyMoves': 'Penalty (moves):',
   'playground.noPathExists': 'No path',
+  'playground.speedBonus': 'Bonus (speed):',
 
   // Controls
   'controls.algorithm': 'Algorithm',

@@ -9,7 +9,7 @@ import { ToolbarComponent } from '../../components/toolbar/toolbar.component';
   imports: [CommonModule, GridComponent, ToolbarComponent],
   template: `
     <app-toolbar></app-toolbar>
-    <div style="display: flex; align-items: center; justify-content: center; height: calc(100vh - 140px);">
+    <div style="display: flex; align-items: start; justify-content: center; padding: 24px 48px; min-height: calc(100vh - 200px);">
       <app-grid></app-grid>
     </div>
   `,

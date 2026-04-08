@@ -30,133 +30,183 @@ interface CompareResult {
   standalone: true,
   imports: [CommonModule, FormsModule, GridComponent],
   template: `
-    <div class="flex gap-4 p-4 max-w-screen-2xl mx-auto">
-      <!-- Sidebar -->
-      <aside class="w-80 flex-shrink-0">
-        <div data-help="compare-sidebar" [class]="isDark
-          ? 'flex flex-col gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700'
-          : 'flex flex-col gap-4 p-4 bg-white rounded-lg border border-slate-200 shadow-sm'">
+    <!-- ═══ COMPARE CONTROLS BAR ═══ -->
+    <div [style.background]="isDark
+           ? 'linear-gradient(180deg, #3D3128 0%, #352A21 100%)'
+           : 'linear-gradient(180deg, #FFF9F2 0%, #F5EFE7 100%)'"
+      [style.border-bottom]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+      [style.box-shadow]="isDark
+        ? '0 6px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+        : '0 4px 24px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)'"
+      style="padding: 14px 48px; position: relative; z-index: 20;">
 
-          <h2 [class]="isDark ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">
-            {{ i18n.t('nav.compare') }}
-          </h2>
+      <div class="flex items-center justify-center gap-6 mx-auto flex-wrap">
 
-          <!-- Algorithm Selection -->
-          <div>
-            <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-2' : 'block text-sm font-medium text-slate-600 mb-2'">
-              {{ i18n.t('controls.algorithm') }}
-            </label>
-            <div class="flex flex-col gap-1.5">
-              <label *ngFor="let algo of allAlgorithms"
-                class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" [checked]="selectedAlgorithms.has(algo.value)"
-                  (change)="toggleAlgorithm(algo.value)"
-                  class="rounded" />
-                <span [class]="isDark ? 'text-sm text-slate-300' : 'text-sm text-slate-700'">
-                  {{ algo.label }}
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Heuristic & Neighbors -->
-          <div>
-            <label [class]="isDark ? 'block text-sm font-medium text-slate-300 mb-1' : 'block text-sm font-medium text-slate-600 mb-1'">
-              {{ i18n.t('controls.heuristic') }}
-            </label>
-            <select [(ngModel)]="heuristic"
-              [class]="isDark
-                ? 'w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 text-sm'
-                : 'w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-slate-800 text-sm'">
-              <option value="manhattan">Manhattan</option>
-              <option value="euclidean">Euclidean</option>
-              <option value="chebyshev">Chebyshev</option>
-              <option value="octile">Octile</option>
-            </select>
-          </div>
-
-          <div class="flex gap-2">
-            <button (click)="neighborMode = 4"
-              [class]="neighborMode === 4 ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-blue-600 text-white' : isDark ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-700 text-slate-300' : 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-200 text-slate-700'"
-            >{{ i18n.t('controls.directions4') }}</button>
-            <button (click)="neighborMode = 8"
-              [class]="neighborMode === 8 ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-blue-600 text-white' : isDark ? 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-700 text-slate-300' : 'flex-1 px-3 py-1.5 rounded text-sm font-medium bg-slate-200 text-slate-700'"
-            >{{ i18n.t('controls.directions8') }}</button>
-          </div>
-
-          <!-- Run Compare -->
-          <button (click)="runCompare()" data-help="compare-run"
-            [disabled]="selectedAlgorithms.size === 0 || isRunning"
-            class="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2.5 rounded text-sm font-medium transition-colors">
-            {{ isRunning ? '⏳ ...' : '▶ Pokreni poređenje' }}
+        <!-- Algorithm chips -->
+        <div class="flex items-center gap-2 flex-wrap"
+          [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.5)'"
+          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+          style="padding: 6px 12px; border-radius: 16px;" data-help="compare-sidebar">
+          <button *ngFor="let algo of allAlgorithms; let i = index"
+            (click)="toggleAlgorithm(algo.value)"
+            [style.background]="selectedAlgorithms.has(algo.value)
+              ? getAlgoColor(i)
+              : 'transparent'"
+            [style.color]="selectedAlgorithms.has(algo.value)
+              ? 'white'
+              : (isDark ? '#8B7A6B' : '#A89888')"
+            [style.border]="selectedAlgorithms.has(algo.value)
+              ? '1px solid transparent'
+              : (isDark ? '1px solid #4A3D32' : '1px solid #D7CABC')"
+            [style.font-weight]="selectedAlgorithms.has(algo.value) ? '600' : '400'"
+            [style.opacity]="selectedAlgorithms.has(algo.value) ? '1' : '0.7'"
+            style="padding: 8px 16px; border-radius: 10px; font-size: 12px; cursor: pointer; transition: all 0.2s;"
+            class="hover:opacity-100">
+            {{ algo.label }}
           </button>
-
           <button (click)="selectAll()"
-            [class]="isDark ? 'w-full bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-sm transition-colors' : 'w-full bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded text-sm transition-colors'">
-            Izaberi sve
+            [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+            style="padding: 8px 14px; border-radius: 10px; font-size: 11px; cursor: pointer; transition: all 0.2s; background: transparent; text-transform: uppercase; letter-spacing: 0.06em;"
+            class="hover:opacity-70">
+            {{ i18n.t('compare.selectAll') }}
+          </button>
+          <button (click)="deselectAll()"
+            [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            style="padding: 8px 10px; border-radius: 10px; font-size: 11px; cursor: pointer; transition: all 0.2s; background: transparent; border: none; opacity: 0.5;"
+            class="hover:opacity-100">
+            ✕
           </button>
         </div>
-      </aside>
 
-      <!-- Main area -->
-      <section class="flex-1">
-        <!-- Grid -->
-        <div class="mb-4">
-          <app-grid></app-grid>
+        <!-- Settings group -->
+        <div class="flex items-center gap-2"
+          [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.5)'"
+          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+          style="padding: 6px 12px; border-radius: 16px;" data-help="compare-settings">
+
+          <select [(ngModel)]="heuristic"
+            [style.background-color]="isDark ? '#3D3128' : '#F5EFE7'"
+            [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+            [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+            style="border-radius: 10px; padding: 8px 14px; font-size: 12px; outline: none; cursor: pointer;">
+            <option value="manhattan">Manhattan</option>
+            <option value="euclidean">Euclidean</option>
+            <option value="chebyshev">Chebyshev</option>
+            <option value="octile">Octile</option>
+          </select>
+
+          <button (click)="neighborMode = 4"
+            [style.background]="neighborMode === 4 ? (isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.1)') : 'transparent'"
+            [style.color]="neighborMode === 4 ? '#8B5E50' : (isDark ? '#8B7A6B' : '#A89888')"
+            [style.border]="neighborMode === 4 ? '1px solid rgba(110,71,59,0.3)' : (isDark ? '1px solid #4A3D32' : '1px solid #D7CABC')"
+            [style.font-weight]="neighborMode === 4 ? '600' : '400'"
+            style="padding: 8px 14px; border-radius: 10px; font-size: 12px; cursor: pointer; transition: all 0.2s;">4</button>
+          <button (click)="neighborMode = 8"
+            [style.background]="neighborMode === 8 ? (isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.1)') : 'transparent'"
+            [style.color]="neighborMode === 8 ? '#8B5E50' : (isDark ? '#8B7A6B' : '#A89888')"
+            [style.border]="neighborMode === 8 ? '1px solid rgba(110,71,59,0.3)' : (isDark ? '1px solid #4A3D32' : '1px solid #D7CABC')"
+            [style.font-weight]="neighborMode === 8 ? '600' : '400'"
+            style="padding: 8px 14px; border-radius: 10px; font-size: 12px; cursor: pointer; transition: all 0.2s;">8</button>
         </div>
 
-        <!-- Results Table -->
-        <div *ngIf="results.length > 0"
-          [class]="isDark ? 'bg-slate-800 rounded-lg border border-slate-700 overflow-hidden' : 'bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden'">
-          <table class="w-full text-sm">
-            <thead>
-              <tr [class]="isDark ? 'bg-slate-900' : 'bg-slate-100'">
-                <th [class]="isDark ? 'text-left px-4 py-3 text-slate-300 font-medium' : 'text-left px-4 py-3 text-slate-600 font-medium'">Algoritam</th>
-                <th [class]="isDark ? 'text-right px-4 py-3 text-slate-300 font-medium' : 'text-right px-4 py-3 text-slate-600 font-medium'">Obrađeno</th>
-                <th [class]="isDark ? 'text-right px-4 py-3 text-slate-300 font-medium' : 'text-right px-4 py-3 text-slate-600 font-medium'">Max Frontier</th>
-                <th [class]="isDark ? 'text-right px-4 py-3 text-slate-300 font-medium' : 'text-right px-4 py-3 text-slate-600 font-medium'">Cena puta</th>
-                <th [class]="isDark ? 'text-right px-4 py-3 text-slate-300 font-medium' : 'text-right px-4 py-3 text-slate-600 font-medium'">Dužina</th>
-                <th [class]="isDark ? 'text-right px-4 py-3 text-slate-300 font-medium' : 'text-right px-4 py-3 text-slate-600 font-medium'">Vreme (ms)</th>
-                <th [class]="isDark ? 'text-center px-4 py-3 text-slate-300 font-medium' : 'text-center px-4 py-3 text-slate-600 font-medium'">Put</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let r of results; let i = index"
-                [class]="isDark
-                  ? (i % 2 === 0 ? 'bg-slate-800' : 'bg-slate-850') + ' hover:bg-slate-700 transition-colors'
-                  : (i % 2 === 0 ? 'bg-white' : 'bg-slate-50') + ' hover:bg-slate-100 transition-colors'">
-                <td [class]="isDark ? 'px-4 py-2.5 text-slate-200 font-medium' : 'px-4 py-2.5 text-slate-800 font-medium'">
-                  <span class="inline-block w-3 h-3 rounded-full mr-2" [style.background-color]="getAlgoColor(i)"></span>
-                  {{ r.name }}
-                </td>
-                <td [class]="isDark ? 'px-4 py-2.5 text-slate-300 text-right' : 'px-4 py-2.5 text-slate-600 text-right'"
-                  [style.color]="r.expandedCount === bestExpanded ? '#22c55e' : ''">
-                  {{ r.expandedCount }}
-                </td>
-                <td [class]="isDark ? 'px-4 py-2.5 text-slate-300 text-right' : 'px-4 py-2.5 text-slate-600 text-right'">
-                  {{ r.maxFrontierSize }}
-                </td>
-                <td [class]="isDark ? 'px-4 py-2.5 text-slate-300 text-right' : 'px-4 py-2.5 text-slate-600 text-right'"
-                  [style.color]="r.foundPath && r.pathCost === bestCost ? '#22c55e' : ''">
-                  {{ r.foundPath ? (r.pathCost | number:'1.1-1') : 'N/A' }}
-                </td>
-                <td [class]="isDark ? 'px-4 py-2.5 text-slate-300 text-right' : 'px-4 py-2.5 text-slate-600 text-right'">
-                  {{ r.pathLength ?? 'N/A' }}
-                </td>
-                <td [class]="isDark ? 'px-4 py-2.5 text-slate-300 text-right' : 'px-4 py-2.5 text-slate-600 text-right'"
-                  [style.color]="r.executionTimeMs === bestTime ? '#22c55e' : ''">
-                  {{ r.executionTimeMs | number:'1.2-2' }}
-                </td>
-                <td class="px-4 py-2.5 text-center">
-                  <span [class]="r.foundPath ? 'text-green-500' : 'text-red-500'">
-                    {{ r.foundPath ? '✓' : '✗' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Run button -->
+        <button (click)="runCompare()" data-help="compare-run"
+          [disabled]="selectedAlgorithms.size === 0 || isRunning"
+          class="text-white transition-all duration-200 disabled:opacity-30 hover:scale-[1.04] active:scale-[0.97] cursor-pointer"
+          style="padding: 10px 28px; border-radius: 14px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1); border: none;">
+          {{ isRunning ? i18n.t('compare.running') : i18n.t('compare.run') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ GRID (centered) ═══ -->
+    <div style="display: flex; align-items: start; justify-content: center; padding: 24px 48px;"
+      [style.min-height]="results.length > 0 ? 'auto' : 'calc(100vh - 200px)'">
+      <app-grid></app-grid>
+    </div>
+
+    <!-- ═══ RESULTS TABLE ═══ -->
+    <div *ngIf="results.length > 0" style="padding: 0 48px 40px;">
+      <div [style.background]="isDark ? '#3D3128' : '#FFFCF8'"
+        [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+        [style.box-shadow]="isDark
+          ? '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)'
+          : '0 8px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)'"
+        style="border-radius: 20px; overflow: hidden;">
+
+        <!-- Table header -->
+        <div [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.3)'"
+          [style.border-bottom]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+          class="grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 80px; padding: 14px 24px; gap: 8px;">
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">
+            {{ i18n.t('compare.algorithm') }}</div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; text-align: right;">
+            {{ i18n.t('compare.expanded') }}</div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; text-align: right;">
+            {{ i18n.t('compare.maxFrontier') }}</div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; text-align: right;">
+            {{ i18n.t('compare.pathCost') }}</div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; text-align: right;">
+            {{ i18n.t('compare.pathLength') }}</div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; text-align: right;">
+            {{ i18n.t('compare.time') }}</div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; text-align: center;">
+            {{ i18n.t('compare.path') }}</div>
         </div>
-      </section>
+
+        <!-- Table rows -->
+        <div *ngFor="let r of results; let i = index"
+          class="grid transition-all duration-150"
+          [style.border-bottom]="i < results.length - 1 ? (isDark ? '1px solid rgba(74,61,50,0.4)' : '1px solid rgba(215,202,188,0.5)') : 'none'"
+          style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 80px; padding: 14px 24px; gap: 8px; cursor: default;"
+          [class]="isDark ? 'hover:bg-[rgba(74,61,50,0.3)]' : 'hover:bg-[rgba(237,228,216,0.4)]'">
+
+          <!-- Algorithm name with color dot -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;" [style.background-color]="getAlgoColor(i)"></span>
+            <span [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 13px; font-weight: 600;">{{ r.name }}</span>
+          </div>
+
+          <!-- Expanded -->
+          <div style="text-align: right; font-size: 13px; font-variant-numeric: tabular-nums;"
+            [style.color]="r.expandedCount === bestExpanded ? '#22C55E' : (isDark ? '#A99888' : '#8B7A6B')"
+            [style.font-weight]="r.expandedCount === bestExpanded ? '700' : '400'">
+            {{ r.expandedCount }}
+          </div>
+
+          <!-- Max Frontier -->
+          <div style="text-align: right; font-size: 13px; font-variant-numeric: tabular-nums;"
+            [style.color]="isDark ? '#A99888' : '#8B7A6B'">
+            {{ r.maxFrontierSize }}
+          </div>
+
+          <!-- Path Cost -->
+          <div style="text-align: right; font-size: 13px; font-variant-numeric: tabular-nums;"
+            [style.color]="r.foundPath && r.pathCost === bestCost ? '#22C55E' : (isDark ? '#A99888' : '#8B7A6B')"
+            [style.font-weight]="r.foundPath && r.pathCost === bestCost ? '700' : '400'">
+            {{ r.foundPath ? (r.pathCost | number:'1.1-1') : '—' }}
+          </div>
+
+          <!-- Path Length -->
+          <div style="text-align: right; font-size: 13px; font-variant-numeric: tabular-nums;"
+            [style.color]="isDark ? '#A99888' : '#8B7A6B'">
+            {{ r.pathLength ?? '—' }}
+          </div>
+
+          <!-- Time -->
+          <div style="text-align: right; font-size: 13px; font-variant-numeric: tabular-nums;"
+            [style.color]="r.executionTimeMs === bestTime ? '#22C55E' : (isDark ? '#A99888' : '#8B7A6B')"
+            [style.font-weight]="r.executionTimeMs === bestTime ? '700' : '400'">
+            {{ r.executionTimeMs | number:'1.2-2' }}
+          </div>
+
+          <!-- Found path indicator -->
+          <div style="text-align: center; font-size: 14px;">
+            <span [style.color]="r.foundPath ? '#22C55E' : '#F43F5E'">{{ r.foundPath ? '●' : '○' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   `,
 })
@@ -170,15 +220,20 @@ export class ComparePageComponent implements OnInit, OnDestroy {
   heuristic: HeuristicType = HeuristicType.MANHATTAN;
   neighborMode: NeighborMode = NeighborMode.FOUR;
   isRunning = false;
+  showSettingsHint = false;
   results: CompareResult[] = [];
 
   bestExpanded = 0;
   bestCost = 0;
   bestTime = 0;
 
-  private algoColors = [
-    '#3b82f6', '#ef4444', '#22c55e', '#f59e0b',
-    '#8b5cf6', '#ec4899', '#06b6d4', '#f97316',
+  private algoColorsDark = [
+    '#8B5E50', '#A78D78', '#6E473B', '#C4A882',
+    '#7A6558', '#B09880', '#5D4A3E', '#9C8470',
+  ];
+  private algoColorsLight = [
+    '#6E473B', '#8B7060', '#4A3428', '#A08060',
+    '#5D4A3E', '#9C8470', '#3D2E24', '#B09880',
   ];
 
   allAlgorithms = [
@@ -223,8 +278,13 @@ export class ComparePageComponent implements OnInit, OnDestroy {
     this.allAlgorithms.forEach(a => this.selectedAlgorithms.add(a.value));
   }
 
+  deselectAll(): void {
+    this.selectedAlgorithms.clear();
+  }
+
   getAlgoColor(index: number): string {
-    return this.algoColors[index % this.algoColors.length];
+    const colors = this.isDark ? this.algoColorsDark : this.algoColorsLight;
+    return colors[index % colors.length];
   }
 
   runCompare(): void {

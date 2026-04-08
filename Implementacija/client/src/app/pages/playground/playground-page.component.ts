@@ -12,7 +12,7 @@ import { posKey, posEqual } from '../../algorithms/helpers';
 import { getNeighbors } from '../../algorithms/grid-utils';
 import {
   AlgorithmType, HeuristicType, NeighborMode,
-  AlgorithmOptions, Position, Grid, CellType,
+  AlgorithmOptions, Position, Grid, CellType, EventType,
 } from '@shared/types';
 
 interface PlaygroundResult {
@@ -32,94 +32,144 @@ interface PlaygroundResult {
   standalone: true,
   imports: [CommonModule, FormsModule, GridComponent],
   template: `
-    <div class="flex gap-4 p-4 max-w-screen-2xl mx-auto">
-      <!-- Sidebar -->
-      <aside class="w-80 flex-shrink-0">
-        <div data-help="playground-sidebar" [class]="isDark
-          ? 'flex flex-col gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700'
-          : 'flex flex-col gap-4 p-4 bg-white rounded-lg border border-slate-200 shadow-sm'">
+    <!-- ═══ PLAYGROUND CONTROLS BAR ═══ -->
+    <div [style.background]="isDark
+           ? 'linear-gradient(180deg, #3D3128 0%, #352A21 100%)'
+           : 'linear-gradient(180deg, #FFF9F2 0%, #F5EFE7 100%)'"
+      [style.border-bottom]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+      [style.box-shadow]="isDark
+        ? '0 6px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+        : '0 4px 24px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)'"
+      style="padding: 14px 48px; position: relative; z-index: 20;">
 
-          <h2 [class]="isDark ? 'text-lg font-bold text-white' : 'text-lg font-bold text-slate-900'">
-            {{ i18n.t('nav.playground') }}
-          </h2>
+      <div class="flex items-center justify-center gap-6 mx-auto flex-wrap">
 
-          <!-- Instructions -->
-          <div [class]="isDark ? 'text-sm text-slate-400' : 'text-sm text-slate-500'">
-            <p class="mb-2">Pokušaj da pronađeš najkraći put! Klikni na ćelije od starta do cilja.</p>
-            <p>Ili označi da put ne postoji.</p>
+        <!-- Status group -->
+        <div class="flex items-center gap-4" data-help="playground-sidebar"
+          [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.5)'"
+          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+          style="padding: 8px 20px; border-radius: 16px;">
+          <div class="text-center" style="min-width: 48px;">
+            <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ userPath.length }}</div>
+            <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px;">{{ i18n.t('playground.cells') }}</div>
           </div>
-
-          <!-- Status -->
-          <div [class]="isDark ? 'bg-slate-900 rounded p-3 border border-slate-700' : 'bg-slate-50 rounded p-3 border border-slate-200'">
-            <div class="flex justify-between text-sm mb-1">
-              <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">Tvoj put:</span>
-              <span [class]="isDark ? 'text-slate-200' : 'text-slate-800'">{{ userPath.length }} ćelija</span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">Cena:</span>
-              <span [class]="isDark ? 'text-slate-200' : 'text-slate-800'">{{ getUserPathCost() | number:'1.1-1' }}</span>
-            </div>
+          <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="width: 1px; height: 24px;"></div>
+          <div class="text-center" style="min-width: 48px;">
+            <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ getUserPathCost() | number:'1.1-1' }}</div>
+            <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px;">{{ i18n.t('playground.cost') }}</div>
           </div>
+        </div>
 
-          <!-- Actions -->
-          <button (click)="declareNoPath()"
-            [disabled]="isSubmitted"
-            [class]="isDark
-              ? 'w-full bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white px-4 py-2 rounded text-sm font-medium transition-colors'
-              : 'w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-4 py-2 rounded text-sm font-medium transition-colors'">
-            ✗ Put ne postoji
-          </button>
+        <!-- Actions group -->
+        <div class="flex items-center gap-2" data-help="playground-actions"
+          [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.5)'"
+          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+          style="padding: 6px 12px; border-radius: 16px;">
 
           <button (click)="submitPath()"
             [disabled]="userPath.length < 2 || isSubmitted"
-            class="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-            ✓ Predaj rešenje
+            class="text-white transition-all duration-200 disabled:opacity-30 hover:scale-[1.04] active:scale-[0.97] cursor-pointer"
+            style="padding: 8px 22px; border-radius: 12px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1); border: none;">
+            {{ i18n.t('playground.submit') }}
+          </button>
+
+          <button (click)="declareNoPath()"
+            [disabled]="isSubmitted"
+            [style.color]="isDark ? '#F43F5E' : '#E11D48'"
+            [style.background]="isDark ? 'rgba(244,63,94,0.1)' : 'rgba(225,29,72,0.06)'"
+            [style.border]="isDark ? '1px solid rgba(244,63,94,0.2)' : '1px solid rgba(225,29,72,0.15)'"
+            style="padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; opacity: 0.8;"
+            class="hover:opacity-100 disabled:opacity-30">
+            {{ i18n.t('playground.noPath') }}
           </button>
 
           <button (click)="undoLast()"
             [disabled]="userPath.length === 0 || isSubmitted"
-            [class]="isDark
-              ? 'w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 px-3 py-1.5 rounded text-sm transition-colors'
-              : 'w-full bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 px-3 py-1.5 rounded text-sm transition-colors'">
-            ↩ Poništi poslednji
+            [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+            style="padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent;"
+            class="hover:opacity-70 disabled:opacity-30">
+            {{ i18n.t('playground.undo') }}
           </button>
 
           <button (click)="resetPlayground()"
-            [class]="isDark
-              ? 'w-full bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-sm transition-colors'
-              : 'w-full bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded text-sm transition-colors'">
-            🔄 Resetuj
+            [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            style="padding: 8px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent; border: none;"
+            class="hover:opacity-70">
+            {{ i18n.t('playground.resetBtn') }}
           </button>
+        </div>
 
-          <!-- Results -->
-          <div *ngIf="result" [class]="isDark ? 'bg-slate-900 rounded p-4 border border-slate-700' : 'bg-slate-50 rounded p-4 border border-slate-200'">
-            <h3 class="text-lg font-bold mb-3" [class]="result.score >= 80 ? 'text-green-400' : result.score >= 50 ? 'text-yellow-400' : 'text-red-400'">
-              Skor: {{ result.score }} / 100
-            </h3>
+        <!-- Instructions hint -->
+        <div [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+          style="font-size: 11px; max-width: 240px; line-height: 1.4; text-align: center;">
+          {{ i18n.t('playground.instructions') }}
+        </div>
+      </div>
+    </div>
 
-            <div class="grid grid-cols-2 gap-y-2 text-sm">
-              <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">Tvoja cena:</span>
-              <span [class]="isDark ? 'text-slate-200 text-right' : 'text-slate-800 text-right'">{{ result.userCost | number:'1.1-1' }}</span>
+    <!-- ═══ GRID (centered) ═══ -->
+    <div style="display: flex; align-items: start; justify-content: center; padding: 24px 48px;"
+      [style.min-height]="result ? 'auto' : 'calc(100vh - 200px)'">
+      <app-grid></app-grid>
+    </div>
 
-              <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">Optimalna cena:</span>
-              <span [class]="isDark ? 'text-slate-200 text-right' : 'text-slate-800 text-right'">
-                {{ result.optimalCost !== null ? (result.optimalCost | number:'1.1-1') : 'Nema puta' }}
-              </span>
+    <!-- ═══ RESULTS PANEL ═══ -->
+    <div *ngIf="result" style="padding: 0 48px 40px;">
+      <div [style.background]="isDark ? '#3D3128' : '#FFFCF8'"
+        [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+        [style.box-shadow]="isDark
+          ? '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)'
+          : '0 8px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)'"
+        style="border-radius: 20px; padding: 32px; max-width: 600px; margin: 0 auto;">
 
-              <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">Penalty (cena):</span>
-              <span class="text-red-400 text-right">-{{ result.breakdown.costPenalty | number:'1.0-0' }}</span>
-
-              <span [class]="isDark ? 'text-slate-400' : 'text-slate-500'">Penalty (potezi):</span>
-              <span class="text-red-400 text-right">-{{ result.breakdown.invalidMovePenalty | number:'1.0-0' }}</span>
-            </div>
+        <!-- Score -->
+        <div style="text-align: center; margin-bottom: 28px;">
+          <div [style.color]="result.score >= 80 ? '#22C55E' : result.score >= 50 ? '#F59E0B' : '#F43F5E'"
+            style="font-size: 48px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;">
+            {{ result.score }}
+          </div>
+          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 6px; font-weight: 600;">
+            {{ i18n.t('playground.score') }} / 100
           </div>
         </div>
-      </aside>
 
-      <!-- Grid -->
-      <section class="flex-1 flex items-start justify-center">
-        <app-grid></app-grid>
-      </section>
+        <!-- Divider -->
+        <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; margin-bottom: 24px;"></div>
+
+        <!-- Breakdown -->
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px 24px; align-items: center;">
+
+          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.yourCost') }}</span>
+          <span [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;">
+            {{ result.userCost | number:'1.1-1' }}
+          </span>
+
+          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.optimalCost') }}</span>
+          <span [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;">
+            {{ result.optimalCost !== null ? (result.optimalCost | number:'1.1-1') : i18n.t('playground.noPathExists') }}
+          </span>
+
+          <!-- Divider row -->
+          <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; grid-column: 1 / -1; margin: 4px 0;"></div>
+
+          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.penaltyCost') }}</span>
+          <span style="font-size: 14px; font-weight: 600; text-align: right; color: #F43F5E; font-variant-numeric: tabular-nums;">
+            -{{ result.breakdown.costPenalty | number:'1.0-0' }}
+          </span>
+
+          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.penaltyMoves') }}</span>
+          <span style="font-size: 14px; font-weight: 600; text-align: right; color: #F43F5E; font-variant-numeric: tabular-nums;">
+            -{{ result.breakdown.invalidMovePenalty | number:'1.0-0' }}
+          </span>
+
+          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.speedBonus') }}</span>
+          <span style="font-size: 14px; font-weight: 600; text-align: right; color: #22C55E; font-variant-numeric: tabular-nums;">
+            +{{ result.breakdown.speedBonus | number:'1.0-0' }}
+          </span>
+        </div>
+      </div>
     </div>
   `,
 })
@@ -181,11 +231,12 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
 
     if (optimal.path === null) {
       // Correct! No path exists
+      const speedBonus = this.calcSpeedBonus();
       this.result = {
         userCost: 0,
         optimalCost: null,
-        score: 100,
-        breakdown: { costPenalty: 0, invalidMovePenalty: 0, speedBonus: 0 },
+        score: Math.min(100, 100 + speedBonus),
+        breakdown: { costPenalty: 0, invalidMovePenalty: 0, speedBonus },
         optimalPath: null,
       };
     } else {
@@ -199,7 +250,7 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
       };
       // Show optimal path
       this.renderer.applyEvents([{
-        type: 'FOUND_PATH' as any,
+        type: EventType.FOUND_PATH,
         path: optimal.path,
         totalCost: optimal.cost,
       }]);
@@ -243,7 +294,8 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
       : 0;
     const invalidMovePenalty = Math.min(50, invalidMoves * 10);
 
-    score = Math.max(0, score - Math.max(0, costPenalty) - invalidMovePenalty);
+    const speedBonus = this.calcSpeedBonus();
+    score = Math.max(0, Math.min(100, score - Math.max(0, costPenalty) - invalidMovePenalty + speedBonus));
 
     this.result = {
       userCost,
@@ -252,7 +304,7 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
       breakdown: {
         costPenalty: Math.max(0, costPenalty),
         invalidMovePenalty,
-        speedBonus: 0,
+        speedBonus,
       },
       optimalPath: optimal.path,
     };
@@ -274,6 +326,17 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
     };
     const { result } = runAlgorithm(grid, grid.start, grid.goal, options);
     return result;
+  }
+
+  /**
+   * Speed bonus: up to 10 points if solved within 30s, scaling linearly to 0 at 120s.
+   */
+  private calcSpeedBonus(): number {
+    const elapsedMs = performance.now() - this.startTime;
+    const elapsedSec = elapsedMs / 1000;
+    if (elapsedSec <= 30) return 10;
+    if (elapsedSec >= 120) return 0;
+    return Math.round(10 * (1 - (elapsedSec - 30) / 90));
   }
 
   private renderUserPath(): void {
