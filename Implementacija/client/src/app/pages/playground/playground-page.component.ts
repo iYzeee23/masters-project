@@ -11,8 +11,14 @@ import { runAlgorithm } from '../../algorithms';
 import { posKey, posEqual } from '../../algorithms/helpers';
 import { getNeighbors } from '../../algorithms/grid-utils';
 import {
-  AlgorithmType, HeuristicType, NeighborMode,
-  AlgorithmOptions, Position, Grid, CellType, EventType,
+  AlgorithmType,
+  HeuristicType,
+  NeighborMode,
+  AlgorithmOptions,
+  Position,
+  Grid,
+  CellType,
+  EventType,
 } from '@shared/types';
 
 interface PlaygroundResult {
@@ -33,144 +39,226 @@ interface PlaygroundResult {
   imports: [CommonModule, FormsModule, GridComponent],
   template: `
     <!-- ═══ PLAYGROUND CONTROLS BAR ═══ -->
-    <div [style.background]="isDark
-           ? 'linear-gradient(180deg, #3D3128 0%, #352A21 100%)'
-           : 'linear-gradient(180deg, #FFF9F2 0%, #F5EFE7 100%)'"
+    <div
+      [style.background]="
+        isDark
+          ? 'linear-gradient(180deg, #3D3128 0%, #352A21 100%)'
+          : 'linear-gradient(180deg, #FFF9F2 0%, #F5EFE7 100%)'
+      "
       [style.border-bottom]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-      [style.box-shadow]="isDark
-        ? '0 6px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
-        : '0 4px 24px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)'"
-      style="padding: 14px 48px; position: relative; z-index: 20;">
-
+      [style.box-shadow]="
+        isDark
+          ? '0 6px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+          : '0 4px 24px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)'
+      "
+      style="padding: 14px 48px; position: relative; z-index: 20;"
+    >
       <div class="flex items-center justify-center gap-6 mx-auto flex-wrap">
-
         <!-- Status group -->
-        <div class="flex items-center gap-4" data-help="playground-sidebar"
+        <div
+          class="flex items-center gap-4"
+          data-help="playground-sidebar"
           [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.5)'"
           [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-          style="padding: 8px 20px; border-radius: 16px;">
+          style="padding: 8px 20px; border-radius: 16px;"
+        >
           <div class="text-center" style="min-width: 48px;">
-            <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ userPath.length }}</div>
-            <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px;">{{ i18n.t('playground.cells') }}</div>
+            <div
+              [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+              style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;"
+            >
+              {{ userPath.length }}
+            </div>
+            <div
+              [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+              style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px;"
+            >
+              {{ i18n.t('playground.cells') }}
+            </div>
           </div>
-          <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="width: 1px; height: 24px;"></div>
+          <div
+            [style.background]="isDark ? '#4A3D32' : '#D7CABC'"
+            style="width: 1px; height: 24px;"
+          ></div>
           <div class="text-center" style="min-width: 48px;">
-            <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ getUserPathCost() | number:'1.1-1' }}</div>
-            <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px;">{{ i18n.t('playground.cost') }}</div>
+            <div
+              [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+              style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;"
+            >
+              {{ getUserPathCost() | number: '1.1-1' }}
+            </div>
+            <div
+              [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+              style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px;"
+            >
+              {{ i18n.t('playground.cost') }}
+            </div>
           </div>
         </div>
 
         <!-- Actions group -->
-        <div class="flex items-center gap-2" data-help="playground-actions"
+        <div
+          class="flex items-center gap-2"
+          data-help="playground-actions"
           [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.5)'"
           [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-          style="padding: 6px 12px; border-radius: 16px;">
-
-          <button (click)="submitPath()"
+          style="padding: 6px 12px; border-radius: 16px;"
+        >
+          <button
+            (click)="submitPath()"
             [disabled]="userPath.length < 2 || isSubmitted"
             class="text-white transition-all duration-200 disabled:opacity-30 hover:scale-[1.04] active:scale-[0.97] cursor-pointer"
-            style="padding: 8px 22px; border-radius: 12px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1); border: none;">
+            style="padding: 8px 22px; border-radius: 12px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1); border: none;"
+          >
             {{ i18n.t('playground.submit') }}
           </button>
 
-          <button (click)="declareNoPath()"
+          <button
+            (click)="declareNoPath()"
             [disabled]="isSubmitted"
             [style.color]="isDark ? '#F43F5E' : '#E11D48'"
             [style.background]="isDark ? 'rgba(244,63,94,0.1)' : 'rgba(225,29,72,0.06)'"
-            [style.border]="isDark ? '1px solid rgba(244,63,94,0.2)' : '1px solid rgba(225,29,72,0.15)'"
+            [style.border]="
+              isDark ? '1px solid rgba(244,63,94,0.2)' : '1px solid rgba(225,29,72,0.15)'
+            "
             style="padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; opacity: 0.8;"
-            class="hover:opacity-100 disabled:opacity-30">
+            class="hover:opacity-100 disabled:opacity-30"
+          >
             {{ i18n.t('playground.noPath') }}
           </button>
 
-          <button (click)="undoLast()"
+          <button
+            (click)="undoLast()"
             [disabled]="userPath.length === 0 || isSubmitted"
             [style.color]="isDark ? '#8B7A6B' : '#A89888'"
             [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
             style="padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent;"
-            class="hover:opacity-70 disabled:opacity-30">
+            class="hover:opacity-70 disabled:opacity-30"
+          >
             {{ i18n.t('playground.undo') }}
           </button>
 
-          <button (click)="resetPlayground()"
+          <button
+            (click)="resetPlayground()"
             [style.color]="isDark ? '#8B7A6B' : '#A89888'"
             style="padding: 8px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent; border: none;"
-            class="hover:opacity-70">
+            class="hover:opacity-70"
+          >
             {{ i18n.t('playground.resetBtn') }}
           </button>
         </div>
 
         <!-- Instructions hint -->
-        <div [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+        <div
+          [style.color]="isDark ? '#8B7A6B' : '#A89888'"
           style="font-size: 11px; max-width: 240px; line-height: 1.4; text-align: center;">
-          {{ i18n.t('playground.instructions') }}
+          {{ i18n.t('playground.instructions') }} {{ i18n.t('playground.instructions2') }}
         </div>
       </div>
     </div>
 
     <!-- ═══ GRID (centered) ═══ -->
-    <div style="display: flex; align-items: start; justify-content: center; padding: 24px 48px;"
-      [style.min-height]="result ? 'auto' : 'calc(100vh - 200px)'">
+    <div
+      style="display: flex; align-items: start; justify-content: center; padding: 24px 48px;"
+      [style.min-height]="result ? 'auto' : 'calc(100vh - 200px)'"
+    >
       <app-grid></app-grid>
     </div>
 
     <!-- ═══ RESULTS PANEL ═══ -->
-    <div *ngIf="result" style="padding: 0 48px 40px;">
-      <div [style.background]="isDark ? '#3D3128' : '#FFFCF8'"
-        [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-        [style.box-shadow]="isDark
-          ? '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)'
-          : '0 8px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)'"
-        style="border-radius: 20px; padding: 32px; max-width: 600px; margin: 0 auto;">
-
-        <!-- Score -->
-        <div style="text-align: center; margin-bottom: 28px;">
-          <div [style.color]="result.score >= 80 ? '#22C55E' : result.score >= 50 ? '#F59E0B' : '#F43F5E'"
-            style="font-size: 48px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;">
-            {{ result.score }}
+    @if (result) {
+      <div style="padding: 0 48px 40px;">
+        <div
+          [style.background]="isDark ? '#3D3128' : '#FFFCF8'"
+          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+          [style.box-shadow]="
+            isDark
+              ? '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)'
+              : '0 8px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)'
+          "
+          style="border-radius: 20px; padding: 32px; max-width: 600px; margin: 0 auto;"
+        >
+          <!-- Score -->
+          <div style="text-align: center; margin-bottom: 28px;">
+            <div
+              [style.color]="
+                result.score >= 80 ? '#22C55E' : result.score >= 50 ? '#F59E0B' : '#F43F5E'
+              "
+              style="font-size: 48px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;"
+            >
+              {{ result.score }}
+            </div>
+            <div
+              [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+              style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 6px; font-weight: 600;"
+            >
+              {{ i18n.t('playground.score') }} / 100
+            </div>
           </div>
-          <div [style.color]="isDark ? '#8B7A6B' : '#A89888'"
-            style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 6px; font-weight: 600;">
-            {{ i18n.t('playground.score') }} / 100
+          <!-- Divider -->
+          <div
+            [style.background]="isDark ? '#4A3D32' : '#D7CABC'"
+            style="height: 1px; margin-bottom: 24px;"
+          ></div>
+          <!-- Breakdown -->
+          <div
+            style="display: grid; grid-template-columns: 1fr auto; gap: 12px 24px; align-items: center;"
+          >
+            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{
+              i18n.t('playground.yourCost')
+            }}</span>
+            <span
+              [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+              style="font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;"
+            >
+              {{ result.userCost | number: '1.1-1' }}
+            </span>
+            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{
+              i18n.t('playground.optimalCost')
+            }}</span>
+            <span
+              [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+              style="font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;"
+            >
+              {{
+                result.optimalCost !== null
+                  ? (result.optimalCost | number: '1.1-1')
+                  : i18n.t('playground.noPathExists')
+              }}
+            </span>
+            <!-- Divider row -->
+            <div
+              [style.background]="isDark ? '#4A3D32' : '#D7CABC'"
+              style="height: 1px; grid-column: 1 / -1; margin: 4px 0;"
+            ></div>
+            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{
+              i18n.t('playground.penaltyCost')
+            }}</span>
+            <span
+              style="font-size: 14px; font-weight: 600; text-align: right; color: #F43F5E; font-variant-numeric: tabular-nums;"
+            >
+              -{{ result.breakdown.costPenalty | number: '1.0-0' }}
+            </span>
+            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{
+              i18n.t('playground.penaltyMoves')
+            }}</span>
+            <span
+              style="font-size: 14px; font-weight: 600; text-align: right; color: #F43F5E; font-variant-numeric: tabular-nums;"
+            >
+              -{{ result.breakdown.invalidMovePenalty | number: '1.0-0' }}
+            </span>
+            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{
+              i18n.t('playground.speedBonus')
+            }}</span>
+            <span
+              style="font-size: 14px; font-weight: 600; text-align: right; color: #22C55E; font-variant-numeric: tabular-nums;"
+            >
+              +{{ result.breakdown.speedBonus | number: '1.0-0' }}
+            </span>
           </div>
-        </div>
-
-        <!-- Divider -->
-        <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; margin-bottom: 24px;"></div>
-
-        <!-- Breakdown -->
-        <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px 24px; align-items: center;">
-
-          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.yourCost') }}</span>
-          <span [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;">
-            {{ result.userCost | number:'1.1-1' }}
-          </span>
-
-          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.optimalCost') }}</span>
-          <span [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;">
-            {{ result.optimalCost !== null ? (result.optimalCost | number:'1.1-1') : i18n.t('playground.noPathExists') }}
-          </span>
-
-          <!-- Divider row -->
-          <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; grid-column: 1 / -1; margin: 4px 0;"></div>
-
-          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.penaltyCost') }}</span>
-          <span style="font-size: 14px; font-weight: 600; text-align: right; color: #F43F5E; font-variant-numeric: tabular-nums;">
-            -{{ result.breakdown.costPenalty | number:'1.0-0' }}
-          </span>
-
-          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.penaltyMoves') }}</span>
-          <span style="font-size: 14px; font-weight: 600; text-align: right; color: #F43F5E; font-variant-numeric: tabular-nums;">
-            -{{ result.breakdown.invalidMovePenalty | number:'1.0-0' }}
-          </span>
-
-          <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;">{{ i18n.t('playground.speedBonus') }}</span>
-          <span style="font-size: 14px; font-weight: 600; text-align: right; color: #22C55E; font-variant-numeric: tabular-nums;">
-            +{{ result.breakdown.speedBonus | number:'1.0-0' }}
-          </span>
         </div>
       </div>
-    </div>
+    }
   `,
 })
 export class PlaygroundPageComponent implements OnInit, OnDestroy {
@@ -193,13 +281,11 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
       this.gridService.createGrid(25, 50);
     }
     this.startTime = performance.now();
-    this.subs.push(
-      this.themeService.theme$.subscribe(t => this.isDark = t === 'dark'),
-    );
+    this.subs.push(this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')));
   }
 
   ngOnDestroy(): void {
-    this.subs.forEach(s => s.unsubscribe());
+    this.subs.forEach((s) => s.unsubscribe());
   }
 
   getUserPathCost(): number {
@@ -249,11 +335,13 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
         optimalPath: optimal.path,
       };
       // Show optimal path
-      this.renderer.applyEvents([{
-        type: EventType.FOUND_PATH,
-        path: optimal.path,
-        totalCost: optimal.cost,
-      }]);
+      this.renderer.applyEvents([
+        {
+          type: EventType.FOUND_PATH,
+          path: optimal.path,
+          totalCost: optimal.cost,
+        },
+      ]);
     }
   }
 
@@ -282,7 +370,8 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
 
     // Check start/goal
     const startsAtStart = this.userPath.length > 0 && posEqual(this.userPath[0], grid.start);
-    const endsAtGoal = this.userPath.length > 0 && posEqual(this.userPath[this.userPath.length - 1], grid.goal);
+    const endsAtGoal =
+      this.userPath.length > 0 && posEqual(this.userPath[this.userPath.length - 1], grid.goal);
 
     if (!startsAtStart || !endsAtGoal) {
       invalidMoves += 10;
@@ -295,7 +384,10 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
     const invalidMovePenalty = Math.min(50, invalidMoves * 10);
 
     const speedBonus = this.calcSpeedBonus();
-    score = Math.max(0, Math.min(100, score - Math.max(0, costPenalty) - invalidMovePenalty + speedBonus));
+    score = Math.max(
+      0,
+      Math.min(100, score - Math.max(0, costPenalty) - invalidMovePenalty + speedBonus),
+    );
 
     this.result = {
       userCost,

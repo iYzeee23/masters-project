@@ -1,7 +1,13 @@
 import {
-  Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, OnInit, HostListener,
+  Component,
+  ElementRef,
+  ViewChild,
+  AfterViewInit,
+  OnDestroy,
+  OnInit,
+  HostListener,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { GridService } from '../../services/grid.service';
 import { GridRendererService } from '../../services/grid-renderer.service';
@@ -19,13 +25,17 @@ export enum EditorTool {
 @Component({
   selector: 'app-grid',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
-    <div class="rounded-2xl"
-      [style.box-shadow]="isDark
-        ? '0 12px 80px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px #554536'
-        : '0 12px 80px rgba(0,0,0,0.2), 0 4px 30px rgba(0,0,0,0.12), 0 0 0 1px #D7CABC'"
-      style="display: inline-block; overflow: hidden; transition: box-shadow 0.5s ease;">
+    <div
+      class="rounded-2xl"
+      [style.box-shadow]="
+        isDark
+          ? '0 12px 80px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px #554536'
+          : '0 12px 80px rgba(0,0,0,0.2), 0 4px 30px rgba(0,0,0,0.12), 0 0 0 1px #D7CABC'
+      "
+      style="display: inline-block; overflow: hidden; transition: box-shadow 0.5s ease;"
+    >
       <canvas
         #gridCanvas
         (mousedown)="onMouseDown($event)"
@@ -60,9 +70,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.gridService.getGrid()) {
       this.gridService.createGrid(25, 50);
     }
-    this.subs.push(
-      this.themeService.theme$.subscribe(t => this.isDark = t === 'dark'),
-    );
+    this.subs.push(this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')));
   }
 
   ngAfterViewInit(): void {
@@ -72,8 +80,8 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
       this.gridService.grid$.subscribe((grid) => {
         if (grid) {
           // Auto-size cells to guarantee grid + shadow fits in viewport
-          const headerToolbar = 140;  // header + toolbar height
-          const shadowPadding = 100;  // shadow + padding on all sides
+          const headerToolbar = 140; // header + toolbar height
+          const shadowPadding = 100; // shadow + padding on all sides
           const availableWidth = window.innerWidth - shadowPadding;
           const availableHeight = window.innerHeight - headerToolbar - shadowPadding;
           const cellW = Math.floor(availableWidth / grid.cols);

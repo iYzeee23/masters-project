@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { ThemeService } from './services/theme.service';
 import { TranslationService } from './services/translation.service';
 import { HelperService } from './services/helper.service';
@@ -12,9 +12,9 @@ import { HelperOverlayComponent } from './components/helper-overlay/helper-overl
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, HelperOverlayComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, HelperOverlayComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App implements OnInit {
   isDark = true;
@@ -35,21 +35,32 @@ export class App implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.theme.theme$.subscribe(t => this.isDark = t === 'dark');
-    this.i18n.lang$.subscribe(l => this.langLabel = l === 'sr' ? 'EN' : 'SR');
-    this.auth.isLoggedIn$.subscribe(v => this.isLoggedIn = v);
-    this.auth.user$.subscribe(u => this.user = u);
-    this.router.events.subscribe(e => {
+    this.theme.theme$.subscribe((t) => (this.isDark = t === 'dark'));
+    this.i18n.lang$.subscribe((l) => (this.langLabel = l === 'sr' ? 'EN' : 'SR'));
+    this.auth.isLoggedIn$.subscribe((v) => (this.isLoggedIn = v));
+    this.auth.user$.subscribe((u) => (this.user = u));
+    this.router.events.subscribe((e) => {
       if (e instanceof NavigationEnd) {
         this.isProfilePage = e.urlAfterRedirects.startsWith('/profile');
-        this.hasToolbar = e.urlAfterRedirects.startsWith('/visualize') || e.urlAfterRedirects.startsWith('/compare');
+        this.hasToolbar =
+          e.urlAfterRedirects.startsWith('/visualize') ||
+          e.urlAfterRedirects.startsWith('/compare');
       }
     });
     this.theme.setTheme(this.theme.getTheme());
   }
 
-  toggleTheme(): void { this.theme.toggle(); }
-  toggleLang(): void { this.i18n.toggle(); }
-  onReset(): void { this.vizService.reset(); }
-  onClearGrid(): void { this.vizService.reset(); this.gridService.clearGrid(); }
+  toggleTheme(): void {
+    this.theme.toggle();
+  }
+  toggleLang(): void {
+    this.i18n.toggle();
+  }
+  onReset(): void {
+    this.vizService.reset();
+  }
+  onClearGrid(): void {
+    this.vizService.reset();
+    this.gridService.clearGrid();
+  }
 }

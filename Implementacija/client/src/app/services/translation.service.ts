@@ -133,6 +133,20 @@ const SR: Translations = {
   'algo.desc.swarm': 'f(n) = g(n) + w₁·h(n) — kompromis između A* i Greedy (w₁ > 1)',
   'algo.desc.convergent_swarm': 'f(n) = g(n) + w₂·h(n) — agresivnija varijanta Swarm (w₂ > w₁)',
   'algo.desc.zero_one_bfs': 'Specijalizovan za težine {0, 1} — koristi deque, brži od Dijkstre',
+
+  // AI Panel
+  'ai.title': 'AI Asistent',
+  'ai.analyzing': 'Analiziram...',
+  'ai.generating': 'Generišem...',
+  'ai.confidence': 'Pouzdanost:',
+  'ai.mapGenerated': 'Mapa generisana!',
+  'ai.density': 'Gustina:',
+  'ai.seed': 'Seed:',
+
+  // Helper
+  'helper.back': '← Nazad',
+  'helper.next': 'Dalje →',
+  'helper.finish': 'Završi',
 };
 
 const EN: Translations = {
@@ -261,6 +275,20 @@ const EN: Translations = {
   'algo.desc.swarm': 'f(n) = g(n) + w₁·h(n) — compromise between A* and Greedy (w₁ > 1)',
   'algo.desc.convergent_swarm': 'f(n) = g(n) + w₂·h(n) — more aggressive Swarm variant (w₂ > w₁)',
   'algo.desc.zero_one_bfs': 'Specialized for {0, 1} weights — uses deque, faster than Dijkstra',
+
+  // AI Panel
+  'ai.title': 'AI Assistant',
+  'ai.analyzing': 'Analyzing...',
+  'ai.generating': 'Generating...',
+  'ai.confidence': 'Confidence:',
+  'ai.mapGenerated': 'Map generated!',
+  'ai.density': 'Density:',
+  'ai.seed': 'Seed:',
+
+  // Helper
+  'helper.back': '← Back',
+  'helper.next': 'Next →',
+  'helper.finish': 'Finish',
 };
 
 const TRANSLATIONS: Record<Language, Translations> = { sr: SR, en: EN };
