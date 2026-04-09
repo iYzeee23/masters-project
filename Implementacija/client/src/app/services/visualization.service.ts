@@ -158,6 +158,82 @@ export class VisualizationService {
   }
 
   /**
+   * Analyze the pre-computed trace and extract key moments programmatically.
+   * Returns step indices + context for each key moment (for AI to explain).
+   */
+  extractKeyMoments(): { stepIndex: number; context: string }[] {
+    if (this.allStepEvents.length === 0) return [];
+
+    const total = this.allStepEvents.length;
+    const moments: { stepIndex: number; context: string }[] = [];
+    let openSize = 0;
+    let closedSize = 0;
+    let maxOpenSize = 0;
+    let maxOpenStep = 0;
+    let pathFoundStep = total;
+
+    // Single pass: track open/closed sizes, find peaks
+    const openHistory: number[] = [];
+    const closedHistory: number[] = [];
+
+    for (let i = 0; i < total; i++) {
+      for (const ev of this.allStepEvents[i]) {
+        if (ev.type === EventType.OPEN_ADD) openSize++;
+        if (ev.type === EventType.CLOSE_ADD) { closedSize++; openSize = Math.max(0, openSize - 1); }
+        if (ev.type === EventType.FOUND_PATH || ev.type === EventType.NO_PATH) pathFoundStep = i;
+      }
+      openHistory.push(openSize);
+      closedHistory.push(closedSize);
+      if (openSize > maxOpenSize) { maxOpenSize = openSize; maxOpenStep = i; }
+    }
+
+    // Key moment 1: Early exploration (~10% of steps)
+    const earlyStep = Math.min(Math.floor(total * 0.1), total - 1);
+    moments.push({
+      stepIndex: earlyStep,
+      context: `Early exploration: ${closedHistory[earlyStep]} nodes closed, ${openHistory[earlyStep]} in frontier.`,
+    });
+
+    // Key moment 2: Peak frontier (most nodes waiting to be explored)
+    if (maxOpenStep !== earlyStep) {
+      moments.push({
+        stepIndex: maxOpenStep,
+        context: `Frontier peaked at ${maxOpenSize} nodes. ${closedHistory[maxOpenStep]} nodes already explored.`,
+      });
+    }
+
+    // Key moment 3: Mid-point (~50%)
+    const midStep = Math.floor(total * 0.5);
+    if (midStep !== maxOpenStep && midStep !== earlyStep) {
+      moments.push({
+        stepIndex: midStep,
+        context: `Halfway through: ${closedHistory[midStep]} nodes closed, ${openHistory[midStep]} in frontier. ${Math.round((closedHistory[midStep] / (closedHistory[total - 1] || 1)) * 100)}% of total exploration done.`,
+      });
+    }
+
+    // Key moment 4: Late exploration (~80%)
+    const lateStep = Math.floor(total * 0.8);
+    if (lateStep !== midStep && lateStep !== maxOpenStep && lateStep < pathFoundStep) {
+      moments.push({
+        stepIndex: lateStep,
+        context: `Late stage: ${closedHistory[lateStep]} nodes closed, frontier down to ${openHistory[lateStep]} nodes.`,
+      });
+    }
+
+    // Key moment 5: Path found (or no path)
+    const finalEvents = this.allStepEvents[pathFoundStep] || [];
+    const found = finalEvents.some(e => e.type === EventType.FOUND_PATH);
+    moments.push({
+      stepIndex: pathFoundStep,
+      context: found
+        ? `Path found after exploring ${closedHistory[pathFoundStep] || closedSize} nodes.`
+        : `No path exists. All ${closedSize} reachable nodes explored.`,
+    });
+
+    return moments.sort((a, b) => a.stepIndex - b.stepIndex);
+  }
+
+  /**
    * Run algorithm instantly (no animation) and return result.
    */
   runInstant(grid: Grid, start: Position, goal: Position, options: AlgorithmOptions) {

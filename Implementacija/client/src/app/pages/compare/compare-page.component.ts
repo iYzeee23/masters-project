@@ -581,9 +581,11 @@ export class ComparePageComponent implements OnInit, OnDestroy {
           heuristic: this.heuristic,
           neighborMode: this.neighborMode,
           swarmWeight:
-            algo === AlgorithmType.SWARM || algo === AlgorithmType.CONVERGENT_SWARM
-              ? this.swarmWeight
-              : undefined,
+            algo === AlgorithmType.CONVERGENT_SWARM
+              ? this.swarmWeight * 2.5
+              : algo === AlgorithmType.SWARM
+                ? this.swarmWeight
+                : undefined,
         };
 
         const { result, executionTimeMs } = runAlgorithm(grid, grid.start, grid.goal, options);

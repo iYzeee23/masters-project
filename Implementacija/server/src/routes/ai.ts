@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { callAI } from '../services/ai';
+import { generateMap, gridToWireFormat, benchmarkGrid, gridFromWireFormat, createVariant, ALGO_LABELS, GeneratorType, AlgoName, ALL_ALGOS } from '../services/generators';
 
 const router = Router();
 
@@ -22,16 +23,27 @@ const tutorSchema = z.object({
   mapSummary: z.record(z.string(), z.unknown()),
   metrics: z.record(z.string(), z.unknown()).optional(),
   traceHighlights: z.array(z.unknown()).optional(),
+  language: z.enum(['sr', 'en']).optional(),
 });
 
 const generateSchema = z.object({
   description: z.string().min(1).max(2000),
   rows: z.number().int().min(5).max(200).optional(),
   cols: z.number().int().min(5).max(200).optional(),
+  language: z.enum(['sr', 'en']).optional(),
 });
 
 const recommendSchema = z.object({
   mapSummary: z.record(z.string(), z.unknown()),
+  gridData: z.object({
+    rows: z.number().int().min(2).max(200),
+    cols: z.number().int().min(4).max(400),
+    walls: z.array(z.array(z.number())),
+    weights: z.array(z.object({ pos: z.array(z.number()), weight: z.number() })),
+    start: z.array(z.number()),
+    goal: z.array(z.number()),
+  }).optional(),
+  language: z.enum(['sr', 'en']).optional(),
 });
 
 const explainSchema = z.object({
@@ -52,23 +64,45 @@ router.post('/tutor', authMiddleware, async (req: AuthRequest, res: Response) =>
       res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
-    const { algorithm, mapSummary, metrics, traceHighlights } = parsed.data;
+    const { algorithm, mapSummary, metrics, traceHighlights, language: tutorLang = 'en' } = parsed.data;
 
-    const prompt = `You are an educational assistant for a pathfinding visualizer. 
-Analyze the execution of the ${algorithm} algorithm and identify the 3-5 most significant moments.
+    const tutorLangInstruction = tutorLang === 'sr'
+      ? '\nIMPORTANT: Write all explanations in Serbian (Latin script).'
+      : '';
 
-Map info: ${JSON.stringify(mapSummary)}
-Metrics: ${JSON.stringify(metrics)}
-Key trace events (sampled): ${JSON.stringify(traceHighlights?.slice(0, 20))}
+    // traceHighlights now contains programmatically-detected key moments with context
+    const momentsCtx = (traceHighlights || []).map((m: any, i: number) =>
+      `Moment ${i + 1} (step ${m.stepIndex}): ${m.context}`
+    ).join('\n');
 
-For each key moment, provide:
-- stepIndex: the approximate step number
-- explanation: a brief (1-2 sentence) explanation of why this moment is significant
+    const prompt = `You are a computer science professor explaining a ${algorithm} algorithm execution to a student.
 
-Respond in JSON format: { "keyMoments": [{ "stepIndex": number, "explanation": string }] }
-Only respond with valid JSON, no markdown.`;
+The student ran ${algorithm} on a grid map. The system has identified these key moments from the ACTUAL execution trace:
 
-    const result = await callAI(prompt);
+${momentsCtx || 'No trace moments available.'}
+
+MAP: ${JSON.stringify(mapSummary)}
+METRICS: ${JSON.stringify(metrics)}
+
+ALGORITHM BEHAVIOR REFERENCE:
+- BFS: FIFO queue, explores layer by layer. Guarantees shortest path (unweighted). Expands many nodes uniformly.
+- DFS: LIFO stack, goes deep first. Does NOT guarantee shortest path. May explore far from goal before backtracking.
+- Dijkstra: Priority queue by g(n). Guarantees cheapest path. Expands in cost-order, not direction.
+- A*: Priority queue by f(n)=g(n)+h(n). Heuristic guides toward goal → fewer expanded nodes than Dijkstra.
+- Greedy: Priority queue by h(n) only. Very fast but NOT optimal. Gets trapped by concave walls.
+- Swarm/Conv. Swarm: Weighted A* (w>1). More aggressive heuristic → faster but possibly suboptimal.
+- 0-1 BFS: Deque-based, optimal for 0/1 weights. 0-cost edges go to front of deque.
+
+For EACH moment above, write an educational explanation (2-3 sentences) that:
+1. Describes what's happening at this specific step using the numbers provided
+2. Explains WHY this matters for understanding how ${algorithm} works
+3. Addresses the student directly ("Notice how...", "At this point...", "This shows that...")
+
+Keep the EXACT same stepIndex values from the moments above. Do NOT invent new step numbers.
+
+Respond ONLY with valid JSON: { "keyMoments": [{ "stepIndex": number, "explanation": string }] }${tutorLangInstruction}`;
+
+    const result = await callAI(prompt, { maxTokens: 1000 });
     let aiResponse;
     try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
     res.json(aiResponse);
@@ -78,7 +112,7 @@ Only respond with valid JSON, no markdown.`;
   }
 });
 
-// POST /api/ai/generate — Generate map from description
+// POST /api/ai/generate — 3-step pipeline: LLM intent → Server brute-force → LLM explain
 router.post('/generate', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const parsed = generateSchema.safeParse(req.body);
@@ -86,36 +120,181 @@ router.post('/generate', authMiddleware, async (req: AuthRequest, res: Response)
       res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
-    const { description, rows = 25, cols = 50 } = parsed.data;
+    const { description, rows = 25, cols = 50, language = 'en' } = parsed.data;
 
-    const prompt = `You are a map generator for a pathfinding visualizer on a ${rows}x${cols} grid.
-The user wants: "${description}"
+    // ═══ STEP 1: LLM extracts structured intent ═══
+    const intentPrompt = `You are a pathfinding algorithm expert. Parse the student's request into a structured intent.
 
-Generate a grid with walls and weighted cells that match this description.
-Rules:
-- Grid is ${rows} rows x ${cols} cols (0-indexed)
-- Start is at [${Math.floor(rows/2)}, ${Math.floor(cols/4)}], goal at [${Math.floor(rows/2)}, ${Math.floor(3*cols/4)}]
-- Don't place walls on start or goal
-- Weights are integers 2-10 (1 is default/normal)
-- Be creative but ensure the map matches the description
+STUDENT'S REQUEST: "${description}"
 
-Respond in JSON format:
+AVAILABLE ALGORITHMS: bfs, dfs, dijkstra, a_star, greedy, swarm, convergent_swarm, zero_one_bfs
+
+Classify the request into ONE of these intent types:
+1. "algo_excels" — Student wants a map where a specific algorithm performs WELL (few expanded nodes, finds optimal path efficiently)
+2. "algo_struggles" — Student wants a map where a specific algorithm performs POORLY (many expanded nodes, or finds suboptimal path)
+3. "algo_better_than" — Student wants a map where algorithm X clearly outperforms algorithm Y
+4. "optimal_vs_fast" — Student wants to see the trade-off between an optimal algorithm (like Dijkstra/A*) and a faster but suboptimal algorithm (like Greedy/DFS) — show that faster isn't always better
+5. "challenging" — Student wants a generally difficult/complex/interesting map for all algorithms
+
+Respond ONLY with valid JSON:
 {
-  "walls": [[row, col], ...],
-  "weights": [{"pos": [row, col], "weight": number}, ...],
-  "description": "brief description of what you generated"
+  "intent": "algo_excels" | "algo_struggles" | "algo_better_than" | "optimal_vs_fast" | "challenging",
+  "algorithms": ["algo_name", ...],
+  "notes": "brief note about what the student wants"
 }
-Only respond with valid JSON, no markdown.`;
 
-    const result = await callAI(prompt);
-    let aiResponse;
-    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
+Rules for "algorithms" array:
+- "algo_excels": exactly 1 algorithm (the one that should excel)
+- "algo_struggles": exactly 1 algorithm (the one that should struggle)
+- "algo_better_than": exactly 2 algorithms [winner, loser]
+- "optimal_vs_fast": exactly 2 algorithms [optimal_one, fast_one] (e.g. ["dijkstra", "greedy"])
+- "challenging": empty array []`;
+
+    const intentResult = await callAI(intentPrompt, { maxTokens: 200 });
+    let intent;
+    try { intent = JSON.parse(intentResult); } catch { res.status(502).json({ error: 'AI returned invalid intent JSON' }); return; }
+
+    // Validate intent
+    const validIntents = ['algo_excels', 'algo_struggles', 'algo_better_than', 'optimal_vs_fast', 'challenging'];
+    if (!validIntents.includes(intent.intent)) intent.intent = 'challenging';
+    const algos: AlgoName[] = (intent.algorithms || []).filter((a: string) => ALL_ALGOS.includes(a as AlgoName));
+
+    // ═══ STEP 2: Server generates 30 candidate maps and benchmarks them ═══
+    const generators: GeneratorType[] = ['random', 'maze', 'weighted', 'mixed', 'bottleneck', 'city', 'open'];
+    const densities = [15, 25, 35, 45];
+    const candidates: { grid: ReturnType<typeof generateMap>; results: Record<AlgoName, { expanded: number; pathCost: number | null; foundPath: boolean }>; score: number; genType: string }[] = [];
+
+    for (const gen of generators) {
+      const seedCount = gen === 'open' ? 1 : 4; // open always same, others vary
+      for (let s = 0; s < seedCount; s++) {
+        const density = densities[s % densities.length];
+        const grid = generateMap(gen, rows, cols, { density, seed: Math.floor(Math.random() * 1000000) });
+        const results = benchmarkGrid(grid);
+
+        // Skip maps where no path exists for any requested algo
+        const relevant = algos.length > 0 ? algos : ALL_ALGOS;
+        const allFound = relevant.every(a => results[a].foundPath);
+        if (!allFound && intent.intent !== 'challenging') continue;
+
+        // Score based on intent
+        let score = 0;
+        switch (intent.intent) {
+          case 'algo_excels': {
+            if (algos.length < 1) break;
+            const target = algos[0];
+            if (!results[target].foundPath) { score = -Infinity; break; }
+            // Target should have FEWER expanded nodes than average
+            const others = ALL_ALGOS.filter(a => a !== target && results[a].foundPath);
+            const avgOthers = others.length > 0 ? others.reduce((s, a) => s + results[a].expanded, 0) / others.length : 0;
+            score = avgOthers - results[target].expanded;
+            break;
+          }
+          case 'algo_struggles': {
+            if (algos.length < 1) break;
+            const target = algos[0];
+            // Target should have MORE expanded nodes than average
+            const others = ALL_ALGOS.filter(a => a !== target && results[a].foundPath);
+            const avgOthers = others.length > 0 ? others.reduce((s, a) => s + results[a].expanded, 0) / others.length : 0;
+            score = results[target].expanded - avgOthers;
+            break;
+          }
+          case 'algo_better_than': {
+            if (algos.length < 2) break;
+            const [winner, loser] = algos;
+            if (!results[winner].foundPath) { score = -Infinity; break; }
+            // Winner should expand MUCH fewer nodes than loser
+            score = results[loser].expanded - results[winner].expanded;
+            break;
+          }
+          case 'optimal_vs_fast': {
+            if (algos.length < 2) break;
+            const [optimal, fast] = algos;
+            if (!results[optimal].foundPath || !results[fast].foundPath) { score = -Infinity; break; }
+            // Fast one should expand fewer nodes BUT find a more expensive path
+            const expandedDiff = results[optimal].expanded - results[fast].expanded;
+            const costDiff = (results[fast].pathCost ?? 0) - (results[optimal].pathCost ?? 0);
+            // Both differences should be positive (fast expands less, but costs more)
+            score = expandedDiff > 0 && costDiff > 0 ? expandedDiff + costDiff * 5 : -Infinity;
+            break;
+          }
+          case 'challenging': {
+            // Maximize average expanded nodes
+            const found = ALL_ALGOS.filter(a => results[a].foundPath);
+            score = found.length > 0 ? found.reduce((s, a) => s + results[a].expanded, 0) / found.length : 0;
+            break;
+          }
+        }
+
+        candidates.push({ grid, results, score, genType: gen });
+      }
+    }
+
+    // Pick the best candidate
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    if (!best) {
+      res.status(500).json({ error: 'Could not generate a suitable map' });
+      return;
+    }
+
+    // ═══ STEP 3: LLM explains the verified results ═══
+    const metricsStr = ALL_ALGOS
+      .filter(a => best.results[a].foundPath)
+      .map(a => `${ALGO_LABELS[a]}: ${best.results[a].expanded} expanded, cost=${best.results[a].pathCost ?? 'N/A'}`)
+      .join('\n');
+    const failedStr = ALL_ALGOS
+      .filter(a => !best.results[a].foundPath)
+      .map(a => ALGO_LABELS[a])
+      .join(', ');
+
+    const langInstruction = language === 'sr'
+      ? 'IMPORTANT: Write your entire response in Serbian (Latin script). Use Serbian technical terms where appropriate.'
+      : 'Write your response in English.';
+
+    const altLangInstruction = language === 'sr'
+      ? 'Write your response in English.'
+      : 'IMPORTANT: Write your entire response in Serbian (Latin script). Use Serbian technical terms where appropriate.';
+
+    const baseExplainPrompt = `You are a computer science professor explaining pathfinding results to a student.
+
+The student asked: "${description}"
+
+A ${best.genType} map (${rows}×${cols}) was generated and ALL algorithms were run. Here are the VERIFIED results:
+
+${metricsStr}
+${failedStr ? `No path found: ${failedStr}` : ''}
+
+Write a 3-4 sentence educational explanation:
+1. Directly answer the student's question with the actual numbers above
+2. Explain WHY the relevant algorithm(s) performed that way on this specific map type
+3. Give one insight the student should remember (e.g., "This demonstrates that heuristic-guided algorithms like A* expand fewer nodes when...")
+
+Be specific — reference the exact numbers. Address the student directly.`;
+
+    // Request both language variants in parallel
+    const [primaryResult, altResult] = await Promise.all([
+      callAI(`${baseExplainPrompt}\n${langInstruction}\n\nRespond ONLY with valid JSON: { "explanation": string }`, { maxTokens: 500 }),
+      callAI(`${baseExplainPrompt}\n${altLangInstruction}\n\nRespond ONLY with valid JSON: { "explanation": string }`, { maxTokens: 500 }),
+    ]);
+
+    let explanationPrimary = '';
+    let explanationAlt = '';
+    try { explanationPrimary = JSON.parse(primaryResult).explanation || ''; } catch (e) { console.error('[AI explain primary parse]', e, primaryResult.substring(0, 200)); }
+    try { explanationAlt = JSON.parse(altResult).explanation || ''; } catch (e) { console.error('[AI explain alt parse]', e, altResult.substring(0, 200)); }
+    console.log(`[AI generate] intent=${intent.intent}, algos=${algos}, lang=${language}, explanation_sr=${(language === 'sr' ? explanationPrimary : explanationAlt).substring(0, 60)}...`);
+
+    // Build response
+    const wireData = gridToWireFormat(best.grid);
+    const metricsResponse: Record<string, { expanded: number; pathCost: number | null; foundPath: boolean }> = {};
+    for (const a of ALL_ALGOS) metricsResponse[a] = best.results[a];
+
     res.json({
-      rows,
-      cols,
-      start: [Math.floor(rows/2), Math.floor(cols/4)],
-      goal: [Math.floor(rows/2), Math.floor(3*cols/4)],
-      ...aiResponse,
+      ...wireData,
+      generator: best.genType,
+      explanation: { [language]: explanationPrimary, [language === 'sr' ? 'en' : 'sr']: explanationAlt },
+      metrics: metricsResponse,
+      intent: intent.intent,
+      intentAlgorithms: algos.map((a: AlgoName) => ALGO_LABELS[a] || a),
     });
   } catch (err) {
     console.error('[AI generate]', err);
@@ -123,7 +302,7 @@ Only respond with valid JSON, no markdown.`;
   }
 });
 
-// POST /api/ai/recommend — Recommend best/worst algorithm for a map
+// POST /api/ai/recommend — Run all algorithms, find best/worst, explain with AI + "what if" variant
 router.post('/recommend', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const parsed = recommendSchema.safeParse(req.body);
@@ -131,28 +310,93 @@ router.post('/recommend', authMiddleware, async (req: AuthRequest, res: Response
       res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
-    const { mapSummary } = parsed.data;
+    const { mapSummary, gridData, language: recLang = 'en' } = parsed.data;
 
-    const prompt = `You are an algorithm advisor for a pathfinding visualizer.
-Given this map configuration, predict which algorithm will perform BEST and which will perform WORST.
+    // ═══ STEP 1: Run all 8 algorithms on the current map ═══
+    let metrics: Record<AlgoName, { expanded: number; pathCost: number | null; foundPath: boolean }> | null = null;
+    let variantMetrics: Record<AlgoName, { expanded: number; pathCost: number | null; foundPath: boolean }> | null = null;
+    let variantDesc = '';
 
-Map info: ${JSON.stringify(mapSummary)}
+    if (gridData) {
+      const grid = gridFromWireFormat(gridData as any);
+      metrics = benchmarkGrid(grid);
 
-Available algorithms: BFS, DFS, Dijkstra, A*, Greedy Best-First, Swarm, Convergent Swarm, 0-1 BFS
+      // ═══ STEP 2: Create a "what if" variant and benchmark it too ═══
+      const variant = createVariant(grid);
+      variantMetrics = benchmarkGrid(variant.grid);
+      variantDesc = variant.description;
+    }
 
-Consider: number of expanded nodes, path optimality, and execution speed.
+    // ═══ STEP 3: LLM explains the verified results ═══
+    const found = metrics ? Object.entries(metrics).filter(([, v]) => v.foundPath) : [];
+    found.sort((a, b) => a[1].expanded - b[1].expanded);
+    const bestAlgo = found[0]?.[0] || 'a_star';
+    const worstAlgo = found[found.length - 1]?.[0] || 'dfs';
 
-Respond in JSON format:
-{
-  "best": { "algorithm": string, "reason": string, "confidence": number },
-  "worst": { "algorithm": string, "reason": string, "confidence": number }
-}
-Confidence is 0-100. Only respond with valid JSON, no markdown.`;
+    const metricsStr = metrics
+      ? ALL_ALGOS.filter(a => metrics![a].foundPath)
+          .map(a => `${ALGO_LABELS[a]}: ${metrics![a].expanded} expanded, cost=${metrics![a].pathCost ?? 'N/A'}`)
+          .join('\n')
+      : 'No metrics available.';
 
-    const result = await callAI(prompt);
-    let aiResponse;
-    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
-    res.json(aiResponse);
+    const variantStr = variantMetrics
+      ? ALL_ALGOS.filter(a => variantMetrics![a].foundPath)
+          .map(a => `${ALGO_LABELS[a]}: ${variantMetrics![a].expanded} expanded, cost=${variantMetrics![a].pathCost ?? 'N/A'}`)
+          .join('\n')
+      : '';
+
+    const variantContext = variantDesc === 'removed_walls'
+      ? 'We removed ~25% of the walls to open up paths.'
+      : variantDesc === 'added_weights'
+        ? 'We added weighted terrain (cost 3-10) to ~12% of empty cells.'
+        : '';
+
+    const basePrompt = `You are a computer science professor analyzing pathfinding algorithm performance.
+
+All 8 algorithms were run on the student's map. Here are the VERIFIED results:
+
+ORIGINAL MAP:
+${metricsStr}
+
+MAP PROPERTIES: ${JSON.stringify(mapSummary)}
+
+${variantContext ? `We also tested a MODIFIED version of the map (${variantContext}):
+${variantStr}` : ''}
+
+Write a JSON response with three sections:
+
+1. "bestWorst": Explain why ${ALGO_LABELS[bestAlgo as AlgoName]} performed best (${metrics?.[bestAlgo as AlgoName]?.expanded} nodes) and ${ALGO_LABELS[worstAlgo as AlgoName]} performed worst (${metrics?.[worstAlgo as AlgoName]?.expanded} nodes). Reference specific map properties. 2-3 sentences.
+
+2. "tip": One practical tip — what should the student change on this map to make a specific algorithm perform better or worse? Be specific (e.g., "Add a vertical wall to force A* to explore more nodes" or "Remove weights to make BFS optimal again"). 1-2 sentences.
+
+3. "whatIf": ${variantContext ? `The modified map shows what happens when the map is changed (${variantContext}). Compare the original vs modified results — which algorithm improved the most? Which got worse? Reference actual numbers. 2-3 sentences.` : '"No variant available."'}`;
+
+    const langSr = 'IMPORTANT: Write ALL text in Serbian (Latin script).';
+    const langEn = 'Write in English.';
+
+    const [primaryResult, altResult] = await Promise.all([
+      callAI(`${basePrompt}\n${recLang === 'sr' ? langSr : langEn}\n\nRespond ONLY with valid JSON:\n{ "bestWorst": string, "tip": string, "whatIf": string }`, { maxTokens: 800 }),
+      callAI(`${basePrompt}\n${recLang === 'sr' ? langEn : langSr}\n\nRespond ONLY with valid JSON:\n{ "bestWorst": string, "tip": string, "whatIf": string }`, { maxTokens: 800 }),
+    ]);
+
+    let primary: any = {};
+    let alt: any = {};
+    try { primary = JSON.parse(primaryResult); } catch { /* empty */ }
+    try { alt = JSON.parse(altResult); } catch { /* empty */ }
+
+    const primaryLang = recLang;
+    const altLang = recLang === 'sr' ? 'en' : 'sr';
+
+    res.json({
+      best: { algorithm: ALGO_LABELS[bestAlgo as AlgoName] || bestAlgo, expanded: metrics?.[bestAlgo as AlgoName]?.expanded ?? 0, pathCost: metrics?.[bestAlgo as AlgoName]?.pathCost },
+      worst: { algorithm: ALGO_LABELS[worstAlgo as AlgoName] || worstAlgo, expanded: metrics?.[worstAlgo as AlgoName]?.expanded ?? 0, pathCost: metrics?.[worstAlgo as AlgoName]?.pathCost },
+      metrics,
+      variantMetrics: variantMetrics || null,
+      variantType: variantDesc || null,
+      explanation: { [primaryLang]: primary.bestWorst || '', [altLang]: alt.bestWorst || '' },
+      tip: { [primaryLang]: primary.tip || '', [altLang]: alt.tip || '' },
+      whatIf: { [primaryLang]: primary.whatIf || '', [altLang]: alt.whatIf || '' },
+    });
   } catch (err) {
     console.error('[AI recommend]', err);
     res.status(500).json({ error: 'AI request failed' });
@@ -169,13 +413,26 @@ router.post('/explain', authMiddleware, async (req: AuthRequest, res: Response) 
     }
     const { context, question } = parsed.data;
 
-    const prompt = `You are an educational assistant for a pathfinding visualizer.
-The user is looking at: ${context}
-Their question/click context: ${question}
+    const prompt = `You are a friendly computer science tutor helping a student understand pathfinding algorithms through a visualization tool.
 
-Provide a brief (2-3 sentences) educational explanation. Be specific about the numbers and algorithms involved.
-Respond in JSON format: { "explanation": string }
-Only respond with valid JSON, no markdown.`;
+The student clicked on a metric or element and needs a clear, educational explanation.
+
+CONTEXT: ${context}
+WHAT THEY CLICKED / ASKED: ${question}
+
+BACKGROUND KNOWLEDGE TO DRAW FROM:
+- "Expanded nodes" = how many cells the algorithm visited. Lower is more efficient. BFS/DFS expand many nodes; A* with a good heuristic expands fewer.
+- "Path cost" = total weight of the found path. Optimal algorithms (BFS unweighted, Dijkstra, A*) always find the minimum cost. Greedy/DFS may find more expensive paths.
+- "Path length" = number of cells in the path. On unweighted graphs, shorter = cheaper. On weighted graphs, a longer path through light-weight cells can be cheaper than a short path through heavy cells.
+- "Max frontier" = peak size of the open set (nodes waiting to be explored). Higher frontier = more memory usage.
+- "Execution time" = wall-clock time. Affected by both algorithm complexity and implementation. On small grids, differences are tiny.
+
+Write 2-3 sentences that are:
+- Specific (reference the actual numbers from the context)
+- Educational (explain WHY, not just WHAT)
+- Encouraging (help the student build intuition)
+
+Respond ONLY with valid JSON: { "explanation": string }`;
 
     const result = await callAI(prompt);
     let aiResponse;
@@ -197,19 +454,24 @@ router.post('/compare-insight', authMiddleware, async (req: AuthRequest, res: Re
     }
     const { results, mapSummary } = parsed.data;
 
-    const prompt = `You are an educational assistant for a pathfinding visualizer.
-The user ran multiple algorithms on the same map and got these results:
+    const prompt = `You are a computer science professor analyzing the results of a pathfinding algorithm comparison experiment.
 
-Map: ${JSON.stringify(mapSummary)}
-Results: ${JSON.stringify(results)}
+A student ran multiple algorithms on the same map and got these results. Write an insightful educational analysis.
 
-Write a brief (3-5 sentences) comparative analysis explaining:
-- Why certain algorithms performed better/worse
-- The trade-off between speed (expanded nodes) and path quality (cost)
-- Any surprising results
+MAP PROPERTIES: ${JSON.stringify(mapSummary)}
 
-Respond in JSON format: { "insight": string }
-Only respond with valid JSON, no markdown.`;
+RESULTS (each entry = one algorithm run):
+${JSON.stringify(results, null, 2)}
+
+WRITE YOUR ANALYSIS (4-6 sentences) covering:
+1. **The winner and why**: Which algorithm found the best path with fewest expanded nodes? Explain how the map properties (density, weights, layout) favored this algorithm.
+2. **Optimal vs. fast**: If some algorithms found cheaper paths but expanded more nodes, explain the trade-off. If Greedy/DFS found a path fast but with higher cost, explain why.
+3. **Surprising results**: Did any algorithm perform unexpectedly well or poorly? For example: DFS found a short path by luck, or A* expanded almost as many nodes as BFS (which means the heuristic wasn't very helpful on this map).
+4. **Key takeaway**: One sentence the student should remember — what does this comparison teach about choosing algorithms?
+
+Be specific: reference actual numbers from the results (e.g., "A* expanded only 234 nodes compared to BFS's 891, while finding the same optimal path cost of 47.0").
+
+Respond ONLY with valid JSON: { "insight": string }`;
 
     const result = await callAI(prompt);
     let aiResponse;

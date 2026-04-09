@@ -4,12 +4,16 @@
  * Can be switched to direct OpenAI API by changing endpoint and token.
  */
 
-const GITHUB_MODELS_ENDPOINT =
-  process.env.GITHUB_MODELS_ENDPOINT || 'https://models.inference.ai.azure.com';
-const GITHUB_TOKEN = process.env.GITHUB_MODELS_TOKEN || '';
-
-// Default model — GPT-4o-mini is faster and cheaper, GPT-4o for higher quality
-const DEFAULT_MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
+// Read env vars lazily (dotenv.config() runs after imports)
+function getEndpoint() {
+  return process.env.GITHUB_MODELS_ENDPOINT || 'https://models.inference.ai.azure.com';
+}
+function getToken() {
+  return process.env.GITHUB_MODELS_TOKEN || '';
+}
+function getModel() {
+  return process.env.AI_MODEL || 'gpt-4o-mini';
+}
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -35,11 +39,11 @@ export async function callAI(
     temperature?: number;
   },
 ): Promise<string> {
-  const model = options?.model || DEFAULT_MODEL;
+  const model = options?.model || getModel();
   const maxTokens = options?.maxTokens || 1000;
   const temperature = options?.temperature ?? 0.3;
 
-  if (!GITHUB_TOKEN) {
+  if (!getToken()) {
     throw new Error('GITHUB_MODELS_TOKEN is not set. Please configure it in .env');
   }
 
@@ -47,7 +51,7 @@ export async function callAI(
     {
       role: 'system',
       content:
-        'You are a precise AI assistant for a pathfinding visualizer. Always respond with valid JSON only. No markdown, no extra text.',
+        'You are an expert computer science educator specializing in graph algorithms and pathfinding. You help students understand algorithm behavior through an interactive visualization tool. Always respond with valid JSON only — no markdown code fences, no backticks, no extra text before or after the JSON object.',
     },
     {
       role: 'user',
@@ -55,11 +59,11 @@ export async function callAI(
     },
   ];
 
-  const response = await fetch(`${GITHUB_MODELS_ENDPOINT}/chat/completions`, {
+  const response = await fetch(`${getEndpoint()}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Authorization: `Bearer ${getToken()}`,
     },
     body: JSON.stringify({
       model,
@@ -67,7 +71,7 @@ export async function callAI(
       max_tokens: maxTokens,
       temperature,
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(60_000),
   });
 
   if (!response.ok) {

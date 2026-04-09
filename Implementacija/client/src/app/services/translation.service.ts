@@ -81,12 +81,17 @@ const SR: Translations = {
   'toolbar.nodes': 'čvorovi',
   'toolbar.cost': 'cena',
   'toolbar.best': 'Najbolji:',
+  'toolbar.whatIf': 'Šta ako?',
+  'toolbar.tip': 'Savet',
   'toolbar.worst': 'Najgori:',
   'toolbar.analyzing': 'Analiziranje...',
   'toolbar.analyzeSteps': '🎓 Analiziraj korake',
   'toolbar.generating': 'Generisanje...',
+  'toolbar.dismiss': 'Zatvori',
   'toolbar.generateMap': '✨ Generiši mapu',
   'toolbar.recommendAlgo': '🏆 Preporuči algoritam',
+  'ai.recommendation': 'AI Preporuka',
+  'toolbar.whatIfDetail': 'Rezultat izmena',
   'toolbar.aiPlaceholder': 'npr. lavirint gde A* ima problema...',
 
   // Compare
@@ -150,6 +155,7 @@ const SR: Translations = {
 
   // AI Panel
   'ai.title': 'AI Asistent',
+  'ai.runFirst': 'Prvo pokrenite vizualizaciju',
   'ai.analyzing': 'Analiziram...',
   'ai.generating': 'Generišem...',
   'ai.confidence': 'Pouzdanost:',
@@ -273,12 +279,17 @@ const EN: Translations = {
   'toolbar.nodes': 'nodes',
   'toolbar.cost': 'cost',
   'toolbar.best': 'Best:',
+  'toolbar.whatIf': 'What if?',
+  'toolbar.tip': 'Tip',
   'toolbar.worst': 'Worst:',
   'toolbar.analyzing': 'Analyzing...',
   'toolbar.analyzeSteps': '🎓 Analyze Steps',
   'toolbar.generating': 'Generating...',
+  'toolbar.dismiss': 'Dismiss',
   'toolbar.generateMap': '✨ Generate Map',
   'toolbar.recommendAlgo': '🏆 Recommend Algorithm',
+  'ai.recommendation': 'AI Recommendation',
+  'toolbar.whatIfDetail': 'Impact of changes',
   'toolbar.aiPlaceholder': 'e.g. maze where A* struggles...',
 
   // Compare
@@ -342,6 +353,7 @@ const EN: Translations = {
 
   // AI Panel
   'ai.title': 'AI Assistant',
+  'ai.runFirst': 'Run visualization first',
   'ai.analyzing': 'Analyzing...',
   'ai.generating': 'Generating...',
   'ai.confidence': 'Confidence:',

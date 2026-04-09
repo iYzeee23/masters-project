@@ -220,6 +220,7 @@ export class VisualizePageComponent implements OnDestroy {
   onExportJSON(): void {
     if (!this.metrics) return;
     const grid = this.gridService.getGrid();
+    this.exportService.clearRuns();
     this.exportService.addRun({
       algorithm: '',
       heuristic: '',
@@ -243,6 +244,7 @@ export class VisualizePageComponent implements OnDestroy {
   onExportCSV(): void {
     if (!this.metrics) return;
     const grid = this.gridService.getGrid();
+    this.exportService.clearRuns();
     this.exportService.addRun({
       algorithm: '',
       heuristic: '',

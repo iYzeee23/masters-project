@@ -227,7 +227,6 @@ export class GridRendererService {
         }
         if (key === this.renderState.goalKey) {
           color = this.renderState.path.size > 0 ? c.path : c.goal;
-          color = c.goal;
         }
 
         // Draw cell — rounded corners for soft aesthetic

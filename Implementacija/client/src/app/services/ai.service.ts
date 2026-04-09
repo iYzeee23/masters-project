@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, timeout } from 'rxjs';
 import { AuthService } from './auth.service';
+import { TranslationService } from './translation.service';
 import { Grid, CellType } from '@shared/types';
 
 export interface KeyMoment {
@@ -21,7 +22,11 @@ export interface AIGeneratedMap {
   goal: [number, number];
   walls: [number, number][];
   weights: { pos: [number, number]; weight: number }[];
-  description: string;
+  generator: string;
+  explanation: { sr: string; en: string };
+  metrics: Record<string, { expanded: number; pathCost: number | null; foundPath: boolean }>;
+  intent: string;
+  intentAlgorithms: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +36,7 @@ export class AIService {
   constructor(
     private http: HttpClient,
     private auth: AuthService,
+    private i18n: TranslationService,
   ) {}
 
   private get headers() {
@@ -85,7 +91,8 @@ export class AIService {
       mapSummary: this.summarizeGrid(grid),
       metrics,
       traceHighlights,
-    }, { headers: this.headers }).pipe(timeout(30000));
+      language: this.i18n.getLanguage(),
+    }, { headers: this.headers }).pipe(timeout(60000));
   }
 
   /**
@@ -96,16 +103,30 @@ export class AIService {
       description,
       rows,
       cols,
-    }, { headers: this.headers }).pipe(timeout(30000));
+      language: this.i18n.getLanguage(),
+    }, { headers: this.headers }).pipe(timeout(60000));
   }
 
   /**
    * AI Recommender — predict best/worst algorithm for a map.
    */
-  getRecommendation(grid: Grid): Observable<AIRecommendation> {
-    return this.http.post<AIRecommendation>(`${this.API}/recommend`, {
+  getRecommendation(grid: Grid): Observable<any> {
+    const walls: [number, number][] = [];
+    const weights: { pos: [number, number]; weight: number }[] = [];
+    for (let r = 0; r < grid.rows; r++)
+      for (let c = 0; c < grid.cols; c++) {
+        if (grid.cells[r][c].type === CellType.WALL) walls.push([r, c]);
+        if (grid.cells[r][c].weight > 1) weights.push({ pos: [r, c], weight: grid.cells[r][c].weight });
+      }
+    return this.http.post<any>(`${this.API}/recommend`, {
       mapSummary: this.summarizeGrid(grid),
-    }, { headers: this.headers }).pipe(timeout(30000));
+      gridData: {
+        rows: grid.rows, cols: grid.cols, walls, weights,
+        start: [grid.start.row, grid.start.col],
+        goal: [grid.goal.row, grid.goal.col],
+      },
+      language: this.i18n.getLanguage(),
+    }, { headers: this.headers }).pipe(timeout(60000));
   }
 
   /**

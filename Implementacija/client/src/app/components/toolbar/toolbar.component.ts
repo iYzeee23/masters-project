@@ -1,4 +1,4 @@
-import { Component, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -223,32 +223,90 @@ type PopupType =
                     [style.border-top]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
                     style="padding-top: 20px;"
                   >
-                    <button
-                      (click)="runTutor()"
-                      [disabled]="loadingAi"
-                      [style.opacity]="loadingAi ? '0.4' : '1'"
-                      style="width: 100%; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #7C3AED, #9333EA); color: white;"
-                    >
-                      {{ loadingAi ? i18n.t('toolbar.analyzing') : i18n.t('toolbar.analyzeSteps') }}
-                    </button>
-                    @if (keyMoments.length > 0) {
-                      <div style="margin-top: 14px; max-height: 200px; overflow-y: auto;">
-                        @for (km of keyMoments; track km.stepIndex) {
-                          <div
-                            [style.background]="isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.05)'"
-                            [style.border]="isDark ? '1px solid rgba(124,58,237,0.15)' : '1px solid rgba(124,58,237,0.12)'"
-                            style="border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;"
-                          >
-                            <div style="font-size: 10px; font-weight: 700; color: #7C3AED; margin-bottom: 4px;">
-                              Step {{ km.stepIndex }}
-                            </div>
-                            <div
-                              [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'"
-                              style="font-size: 12px; line-height: 1.5;"
-                            >{{ km.explanation }}</div>
+                    @if (keyMoments.length === 0) {
+                      <!-- ANALYZE BUTTON -->
+                      <button
+                        (click)="runTutor()"
+                        [disabled]="loadingAi"
+                        [style.opacity]="loadingAi ? '0.4' : '1'"
+                        style="width: 100%; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #7C3AED, #9333EA); color: white;"
+                      >
+                        {{ loadingAi ? i18n.t('toolbar.analyzing') : i18n.t('toolbar.analyzeSteps') }}
+                      </button>
+                    } @else {
+                      <!-- PAGINATED KEY MOMENTS -->
+                      <div
+                        [style.background]="isDark
+                          ? 'linear-gradient(135deg, rgba(124,58,237,0.06), rgba(147,51,234,0.03))'
+                          : 'linear-gradient(135deg, rgba(124,58,237,0.04), rgba(147,51,234,0.02))'"
+                        [style.border]="isDark ? '1px solid rgba(139,92,246,0.15)' : '1px solid rgba(139,92,246,0.10)'"
+                        style="border-radius: 14px; padding: 16px;"
+                      >
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+                          <span style="font-size: 11px; color: #A78BFA;">✦</span>
+                          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #A78BFA;">
+                            AI Tutor
+                          </span>
+                        </div>
+
+                        <!-- Step header -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                          <div style="font-size: 11px; font-weight: 700; color: #7C3AED;">
+                            {{ i18n.t('toolbar.step') }} {{ keyMoments[tutorPage].stepIndex }} / {{ totalSteps }}
                           </div>
-                        }
+                          <div
+                            [style.background]="isDark ? 'rgba(124,58,237,0.12)' : 'rgba(124,58,237,0.08)'"
+                            style="padding: 3px 10px; border-radius: 8px; font-size: 10px; font-weight: 600; color: #A78BFA;"
+                          >
+                            {{ tutorPage + 1 }} / {{ keyMoments.length }}
+                          </div>
+                        </div>
+
+                        <!-- Explanation -->
+                        <p [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-size: 12.5px; line-height: 1.65; margin: 0;">
+                          {{ keyMoments[tutorPage].explanation }}
+                        </p>
+
+                        <!-- Navigation -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px;">
+                          <button
+                            (click)="goToTutorPage(tutorPage > 0 ? tutorPage - 1 : keyMoments.length - 1)"
+                            [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                            style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; opacity: 0.7; transition: opacity 0.2s;"
+                            class="hover:opacity-100"
+                          >
+                            ‹
+                          </button>
+                          <div style="display: flex; gap: 5px;">
+                            @for (km of keyMoments; track km.stepIndex; let i = $index) {
+                              <div
+                                (click)="goToTutorPage(i)"
+                                [style.background]="tutorPage === i ? '#A78BFA' : (isDark ? '#4A3D32' : '#D7CABC')"
+                                style="width: 6px; height: 6px; border-radius: 50%; transition: background 0.2s; cursor: pointer;"
+                              ></div>
+                            }
+                          </div>
+                          <button
+                            (click)="goToTutorPage((tutorPage + 1) % keyMoments.length)"
+                            [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                            style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; opacity: 0.7; transition: opacity 0.2s;"
+                            class="hover:opacity-100"
+                          >
+                            ›
+                          </button>
+                        </div>
                       </div>
+
+                      <!-- Re-analyze button -->
+                      <button
+                        (click)="keyMoments = []; tutorPage = 0;"
+                        [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                        style="width: 100%; margin-top: 14px; padding: 12px; border-radius: 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;"
+                        [style.background]="isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.06)'"
+                        class="hover:opacity-80"
+                      >
+                        {{ i18n.t('toolbar.analyzeSteps') }}
+                      </button>
                     }
                   </div>
                 }
@@ -257,23 +315,110 @@ type PopupType =
                     [style.border-top]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
                     style="padding-top: 20px;"
                   >
-                    <textarea
-                      [(ngModel)]="aiPrompt"
-                      rows="3"
-                      [placeholder]="i18n.t('toolbar.aiPlaceholder')"
-                      [style.background-color]="isDark ? '#3D3128' : '#F5EFE7'"
-                      [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-                      [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
-                      style="width: 100%; border-radius: 14px; padding: 14px 16px; font-size: 13px; resize: none; outline: none; font-family: inherit; line-height: 1.5;"
-                    ></textarea>
-                    <button
-                      (click)="runGenerate()"
-                      [disabled]="loadingAi || !aiPrompt.trim()"
-                      [style.opacity]="loadingAi || !aiPrompt.trim() ? '0.4' : '1'"
-                      style="width: 100%; margin-top: 14px; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #7C3AED, #9333EA); color: white;"
-                    >
-                      {{ loadingAi ? i18n.t('toolbar.generating') : i18n.t('toolbar.generateMap') }}
-                    </button>
+                    @if (!aiInsightActive) {
+                      <!-- INPUT MODE -->
+                      <textarea
+                        [(ngModel)]="aiPrompt"
+                        rows="3"
+                        [placeholder]="i18n.t('toolbar.aiPlaceholder')"
+                        [style.background-color]="isDark ? '#3D3128' : '#F5EFE7'"
+                        [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+                        [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                        style="width: 100%; border-radius: 14px; padding: 14px 16px; font-size: 13px; resize: none; outline: none; font-family: inherit; line-height: 1.5;"
+                      ></textarea>
+                      <button
+                        (click)="runGenerate()"
+                        [disabled]="loadingAi || !aiPrompt.trim()"
+                        [style.opacity]="loadingAi || !aiPrompt.trim() ? '0.4' : '1'"
+                        style="width: 100%; margin-top: 14px; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #7C3AED, #9333EA); color: white;"
+                      >
+                        {{ loadingAi ? i18n.t('toolbar.generating') : i18n.t('toolbar.generateMap') }}
+                      </button>
+                    } @else {
+                      <!-- INSIGHT MODE -->
+                      <div
+                        [style.background]="isDark
+                          ? 'linear-gradient(135deg, rgba(124,58,237,0.06), rgba(147,51,234,0.03))'
+                          : 'linear-gradient(135deg, rgba(124,58,237,0.04), rgba(147,51,234,0.02))'"
+                        [style.border]="isDark ? '1px solid rgba(139,92,246,0.15)' : '1px solid rgba(139,92,246,0.10)'"
+                        style="border-radius: 14px; padding: 16px;"
+                      >
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+                          <span style="font-size: 11px; color: #A78BFA;">✦</span>
+                          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #A78BFA;">
+                            AI Insight
+                          </span>
+                        </div>
+                        @if (aiMapTitle) {
+                          <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 13px; font-weight: 600; margin-bottom: 12px; line-height: 1.4;">
+                            {{ aiMapTitle }}
+                          </div>
+                        }
+
+                        <!-- Paginated content -->
+                        @if (aiInsightPage === 0) {
+                          <p [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-size: 12.5px; line-height: 1.65; margin: 0;">
+                            {{ aiExplanationText }}
+                          </p>
+                        }
+                        @if (aiInsightPage === 1 && aiMapMetrics) {
+                          <div
+                            [style.background]="isDark ? 'rgba(53,42,33,0.5)' : 'rgba(237,228,216,0.4)'"
+                            style="border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto auto; gap: 4px 12px; font-size: 11px;"
+                          >
+                            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em;">{{ i18n.t('compare.algorithm') }}</span>
+                            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; text-align: right;">{{ i18n.t('compare.expanded') }}</span>
+                            <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; text-align: right;">{{ i18n.t('toolbar.cost') }}</span>
+                            @for (entry of getMetricsEntries(); track entry.key) {
+                              <span [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-weight: 500;">{{ entry.label }}</span>
+                              <span [style.color]="entry.foundPath ? (isDark ? '#EDE0D0' : '#4A3428') : '#F43F5E'" style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">
+                                {{ entry.foundPath ? entry.expanded : '✕' }}
+                              </span>
+                              <span [style.color]="isDark ? '#A99888' : '#8B7A6B'" style="text-align: right; font-variant-numeric: tabular-nums;">
+                                {{ entry.foundPath ? (entry.pathCost ?? '—') : '—' }}
+                              </span>
+                            }
+                          </div>
+                        }
+
+                        <!-- Page navigation -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px;">
+                          <button
+                            (click)="aiInsightPage = aiInsightPage > 0 ? aiInsightPage - 1 : aiInsightPageCount - 1"
+                            [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                            style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; opacity: 0.7; transition: opacity 0.2s;"
+                            class="hover:opacity-100"
+                          >
+                            ‹
+                          </button>
+                          <div style="display: flex; gap: 6px;">
+                            @for (dot of [0, 1]; track dot) {
+                              <div
+                                [style.background]="aiInsightPage === dot ? '#A78BFA' : (isDark ? '#4A3D32' : '#D7CABC')"
+                                style="width: 6px; height: 6px; border-radius: 50%; transition: background 0.2s;"
+                              ></div>
+                            }
+                          </div>
+                          <button
+                            (click)="aiInsightPage = (aiInsightPage + 1) % aiInsightPageCount"
+                            [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                            style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; opacity: 0.7; transition: opacity 0.2s;"
+                            class="hover:opacity-100"
+                          >
+                            ›
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        (click)="clearAiInsight()"
+                        [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                        style="width: 100%; margin-top: 14px; padding: 12px; border-radius: 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;"
+                        [style.background]="isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.06)'"
+                        class="hover:opacity-80"
+                      >
+                        {{ i18n.t('toolbar.generateMap') }}
+                      </button>
+                    }
                   </div>
                 }
                 @if (activeAiTab === 'recommend') {
@@ -281,47 +426,94 @@ type PopupType =
                     [style.border-top]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
                     style="padding-top: 20px;"
                   >
-                    <button
-                      (click)="runRecommend()"
-                      [disabled]="loadingAi"
-                      [style.opacity]="loadingAi ? '0.4' : '1'"
-                      style="width: 100%; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #7C3AED, #9333EA); color: white;"
-                    >
-                      {{
-                        loadingAi ? i18n.t('toolbar.analyzing') : i18n.t('toolbar.recommendAlgo')
-                      }}
-                    </button>
-                    @if (recommendation) {
-                      <div style="margin-top: 18px;">
-                        <div
-                          [style.background]="isDark ? '#3D3128' : '#F5EFE7'"
-                          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-                          style="border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;"
-                        >
-                          <span style="color: #22C55E; font-weight: 600; font-size: 12px;">{{
-                            i18n.t('toolbar.best')
-                          }}</span>
-                          <span
-                            [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
-                            style="margin-left: 10px; font-size: 13px;"
-                            >{{ recommendation.best.algorithm }}</span
-                          >
+                    @if (!recommendation) {
+                      <button
+                        (click)="runRecommend()"
+                        [disabled]="loadingAi"
+                        [style.opacity]="loadingAi ? '0.4' : '1'"
+                        style="width: 100%; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #7C3AED, #9333EA); color: white;"
+                      >
+                        {{ loadingAi ? i18n.t('toolbar.analyzing') : i18n.t('toolbar.recommendAlgo') }}
+                      </button>
+                    } @else {
+                      <div
+                        [style.background]="isDark
+                          ? 'linear-gradient(135deg, rgba(124,58,237,0.06), rgba(147,51,234,0.03))'
+                          : 'linear-gradient(135deg, rgba(124,58,237,0.04), rgba(147,51,234,0.02))'"
+                        [style.border]="isDark ? '1px solid rgba(139,92,246,0.15)' : '1px solid rgba(139,92,246,0.10)'"
+                        style="border-radius: 14px; padding: 16px;"
+                      >
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+                          <span style="font-size: 11px; color: #A78BFA;">✦</span>
+                          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #A78BFA;">
+                            {{ i18n.t('ai.recommendation') }}
+                          </span>
                         </div>
-                        <div
-                          [style.background]="isDark ? '#3D3128' : '#F5EFE7'"
-                          [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-                          style="border-radius: 14px; padding: 14px 16px;"
-                        >
-                          <span style="color: #F43F5E; font-weight: 600; font-size: 12px;">{{
-                            i18n.t('toolbar.worst')
-                          }}</span>
-                          <span
-                            [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
-                            style="margin-left: 10px; font-size: 13px;"
-                            >{{ recommendation.worst.algorithm }}</span
-                          >
+
+                        <!-- Best / Worst header -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                          <div [style.background]="isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.06)'" style="flex: 1; border-radius: 10px; padding: 10px 12px; text-align: center;">
+                            <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: #22C55E; margin-bottom: 4px;">{{ i18n.t('toolbar.best') }}</div>
+                            <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 700;">{{ recommendation.best.algorithm }}</div>
+                            <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; margin-top: 2px;">{{ recommendation.best.expanded }} {{ i18n.t('toolbar.nodes') }}</div>
+                          </div>
+                          <div [style.background]="isDark ? 'rgba(244,63,94,0.08)' : 'rgba(244,63,94,0.06)'" style="flex: 1; border-radius: 10px; padding: 10px 12px; text-align: center;">
+                            <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: #F43F5E; margin-bottom: 4px;">{{ i18n.t('toolbar.worst') }}</div>
+                            <div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 14px; font-weight: 700;">{{ recommendation.worst.algorithm }}</div>
+                            <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; margin-top: 2px;">{{ recommendation.worst.expanded }} {{ i18n.t('toolbar.nodes') }}</div>
+                          </div>
+                        </div>
+
+                        <!-- Paginated sections: 0=analysis, 1=tip, 2=whatIf -->
+                        @if (recommendPage === 0) {
+                          <p [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-size: 12.5px; line-height: 1.65; margin: 0;">
+                            {{ getRecommendText('explanation') }}
+                          </p>
+                        }
+                        @if (recommendPage === 1) {
+                          <div>
+                            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: #5BA8D4; margin-bottom: 8px;">
+                              💡 {{ i18n.t('toolbar.tip') }}
+                            </div>
+                            <p [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-size: 12.5px; line-height: 1.65; margin: 0;">
+                              {{ getRecommendText('tip') }}
+                            </p>
+                          </div>
+                        }
+                        @if (recommendPage === 2) {
+                          <div>
+                            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 8px;"
+                              [style.color]="isDark ? '#E8B84D' : '#B8860B'"
+                            >
+                              {{ i18n.t('toolbar.whatIfDetail') }}
+                            </div>
+                            <p [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-size: 12.5px; line-height: 1.65; margin: 0;">
+                              {{ getRecommendText('whatIf') }}
+                            </p>
+                          </div>
+                        }
+
+                        <!-- Navigation dots -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px;">
+                          <button (click)="recommendPage = recommendPage > 0 ? recommendPage - 1 : 2" [style.color]="isDark ? '#A78BFA' : '#7C3AED'" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; opacity: 0.7; transition: opacity 0.2s;" class="hover:opacity-100">‹</button>
+                          <div style="display: flex; gap: 5px;">
+                            @for (dot of [0, 1, 2]; track dot) {
+                              <div (click)="recommendPage = dot" [style.background]="recommendPage === dot ? '#A78BFA' : (isDark ? '#4A3D32' : '#D7CABC')" style="width: 6px; height: 6px; border-radius: 50%; transition: background 0.2s; cursor: pointer;"></div>
+                            }
+                          </div>
+                          <button (click)="recommendPage = (recommendPage + 1) % 3" [style.color]="isDark ? '#A78BFA' : '#7C3AED'" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; opacity: 0.7; transition: opacity 0.2s;" class="hover:opacity-100">›</button>
                         </div>
                       </div>
+
+                      <button
+                        (click)="recommendation = null; recommendPage = 0;"
+                        [style.color]="isDark ? '#A78BFA' : '#7C3AED'"
+                        style="width: 100%; margin-top: 14px; padding: 12px; border-radius: 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;"
+                        [style.background]="isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.06)'"
+                        class="hover:opacity-80"
+                      >
+                        {{ i18n.t('toolbar.recommendAlgo') }}
+                      </button>
                     }
                   </div>
                 }
@@ -992,7 +1184,31 @@ export class ToolbarComponent implements OnDestroy {
   loadingAi = false;
   aiError = '';
   recommendation: any = null;
+  recommendPage = 0;
   keyMoments: { stepIndex: number; explanation: string }[] = [];
+  tutorPage = 0;
+  aiMapExplanation: { sr: string; en: string } = { sr: '', en: '' };
+  aiMapMetrics: Record<string, { expanded: number; pathCost: number | null; foundPath: boolean }> | null = null;
+  private aiMapIntent = '';
+  private aiMapAlgoNames: string[] = [];
+  aiInsightPage = 0; // 0 = explanation text, 1 = metrics table
+
+  get aiInsightPageCount(): number {
+    return this.aiMapMetrics ? 2 : 1;
+  }
+
+  get aiMapTitle(): string {
+    return this.buildInsightTitle(this.aiMapIntent, this.aiMapAlgoNames);
+  }
+
+  get aiInsightActive(): boolean {
+    return this.activeAiTab === 'generate' && !!(this.aiMapExplanation.sr || this.aiMapExplanation.en);
+  }
+
+  get aiExplanationText(): string {
+    const lang = this.i18n.getLanguage();
+    return this.aiMapExplanation[lang] || this.aiMapExplanation.en || this.aiMapExplanation.sr || '';
+  }
 
   // Generators
   genDensity = 30;
@@ -1086,6 +1302,7 @@ export class ToolbarComponent implements OnDestroy {
     private rendererService: GridRendererService,
     private authService: AuthService,
     public i18n: TranslationService,
+    private cdr: ChangeDetectorRef,
   ) {
     this.subs.push(
       this.vizService.state$.subscribe((s) => (this.vizState = s)),
@@ -1253,6 +1470,13 @@ export class ToolbarComponent implements OnDestroy {
     this.vizService.jumpToStep(step);
   }
 
+  goToTutorPage(page: number): void {
+    this.tutorPage = page;
+    if (this.keyMoments[page]) {
+      this.vizService.jumpToStep(this.keyMoments[page].stepIndex);
+    }
+  }
+
   applyGenerator(type: GeneratorType): void {
     this.vizService.reset();
     this.lastGeneratorShort = GENERATOR_INFO[type].short;
@@ -1278,19 +1502,44 @@ export class ToolbarComponent implements OnDestroy {
     const grid = this.gridService.getGrid();
     const metrics = this.vizService.metrics$.value;
     if (!grid || !metrics) {
-      this.aiError = 'Run visualization first';
+      this.aiError = this.i18n.t('ai.runFirst');
       return;
     }
     this.loadingAi = true;
     this.aiError = '';
-    this.aiService.getKeyMoments(this.selectedAlgorithm, grid, metrics, []).subscribe({
+    this.keyMoments = [];
+    this.tutorPage = 0;
+
+    // Extract key moments programmatically from the actual trace
+    const traceMoments = this.vizService.extractKeyMoments();
+    this.aiService.getKeyMoments(this.selectedAlgorithm, grid, metrics, traceMoments).subscribe({
       next: (res) => {
-        this.keyMoments = res.keyMoments || [];
+        const maxStep = this.totalSteps;
+        // If AI returns moments, use them. Clamp step indices.
+        let moments = (res.keyMoments || [])
+          .map(km => ({ ...km, stepIndex: Math.max(0, Math.min(km.stepIndex, maxStep)) }))
+          .sort((a, b) => a.stepIndex - b.stepIndex);
+
+        // If AI returned bad data, fall back to programmatic moments with generic explanations
+        if (moments.length === 0 && traceMoments.length > 0) {
+          moments = traceMoments.map(tm => ({ stepIndex: tm.stepIndex, explanation: tm.context }));
+        }
+
+        this.keyMoments = moments;
         this.loadingAi = false;
+        this.tutorPage = 0;
+        if (this.keyMoments.length === 0) {
+          this.aiError = 'AI returned no key moments — try again';
+        } else {
+          // Jump canvas to the first key moment
+          this.vizService.jumpToStep(this.keyMoments[0].stepIndex);
+        }
+        this.cdr.detectChanges();
       },
-      error: () => {
-        this.aiError = 'AI unavailable';
+      error: (err) => {
+        this.aiError = err?.status === 502 ? 'AI returned invalid response — try again' : 'AI unavailable — check your connection';
         this.loadingAi = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -1299,15 +1548,35 @@ export class ToolbarComponent implements OnDestroy {
     if (!this.aiPrompt.trim()) return;
     this.loadingAi = true;
     this.aiError = '';
+    this.aiMapExplanation = { sr: '', en: '' };
+    this.aiMapMetrics = null;
+    this.aiMapIntent = '';
+    this.aiMapAlgoNames = [];
+    this.aiInsightPage = 0;
     this.aiService.generateMap(this.aiPrompt).subscribe({
       next: (data) => {
-        this.applyAIMap(data);
+        try {
+          this.applyAIMap(data);
+        } catch (e) {
+          console.error('[AI applyMap]', e);
+        }
+        this.aiMapExplanation = typeof data.explanation === 'string'
+          ? { sr: data.explanation, en: data.explanation }
+          : (data.explanation && (data.explanation.sr || data.explanation.en))
+            ? data.explanation
+            : { sr: '', en: '' };
+        this.aiMapMetrics = data.metrics || null;
+        this.aiMapIntent = data.intent || '';
+        this.aiMapAlgoNames = data.intentAlgorithms || [];
+        this.aiInsightPage = 0;
         this.loadingAi = false;
-        this.activePopup = null;
+        this.aiPrompt = '';
+        this.cdr.detectChanges();
       },
-      error: () => {
-        this.aiError = 'AI unavailable';
+      error: (err) => {
+        this.aiError = err?.status === 502 ? 'AI returned invalid response — try again' : 'AI unavailable — check your connection';
         this.loadingAi = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -1317,14 +1586,18 @@ export class ToolbarComponent implements OnDestroy {
     if (!grid) return;
     this.loadingAi = true;
     this.aiError = '';
+    this.recommendation = null;
+    this.recommendPage = 0;
     this.aiService.getRecommendation(grid).subscribe({
       next: (res) => {
         this.recommendation = res;
         this.loadingAi = false;
+        this.cdr.detectChanges();
       },
-      error: () => {
-        this.aiError = 'AI unavailable';
+      error: (err) => {
+        this.aiError = err?.status === 502 ? 'AI returned invalid response — try again' : 'AI unavailable — check your connection';
         this.loadingAi = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -1380,6 +1653,7 @@ export class ToolbarComponent implements OnDestroy {
   onExportJSON(): void {
     if (!this.metrics) return;
     const grid = this.gridService.getGrid();
+    this.exportService.clearRuns();
     this.exportService.addRun({
       algorithm: this.selectedAlgorithm,
       heuristic: this.selectedHeuristic,
@@ -1404,6 +1678,7 @@ export class ToolbarComponent implements OnDestroy {
   onExportCSV(): void {
     if (!this.metrics) return;
     const grid = this.gridService.getGrid();
+    this.exportService.clearRuns();
     this.exportService.addRun({
       algorithm: this.selectedAlgorithm,
       heuristic: this.selectedHeuristic,
@@ -1574,5 +1849,62 @@ export class ToolbarComponent implements OnDestroy {
 
   dismissExplanation(): void {
     this.contextualExplanation = '';
+  }
+
+  clearAiInsight(): void {
+    this.aiMapExplanation = { sr: '', en: '' };
+    this.aiMapMetrics = null;
+    this.aiMapIntent = '';
+    this.aiMapAlgoNames = [];
+  }
+
+  getRecommendText(field: 'explanation' | 'tip' | 'whatIf'): string {
+    if (!this.recommendation?.[field]) return '';
+    const val = this.recommendation[field];
+    if (typeof val === 'string') return val;
+    const lang = this.i18n.getLanguage();
+    return val[lang] || val.en || val.sr || '';
+  }
+
+  private readonly algoLabels: Record<string, string> = {
+    bfs: 'BFS', dfs: 'DFS', dijkstra: 'Dijkstra', a_star: 'A*',
+    greedy: 'Greedy', swarm: 'Swarm', convergent_swarm: 'Conv. Swarm', zero_one_bfs: '0-1 BFS',
+  };
+
+  getMetricsEntries(): { key: string; label: string; expanded: number; pathCost: number | null; foundPath: boolean }[] {
+    if (!this.aiMapMetrics) return [];
+    return Object.entries(this.aiMapMetrics).map(([key, val]) => ({
+      key,
+      label: this.algoLabels[key] || key,
+      expanded: val.expanded,
+      pathCost: val.pathCost,
+      foundPath: val.foundPath,
+    }));
+  }
+
+  private buildInsightTitle(intent: string, algoNames: string[]): string {
+    const isSr = this.i18n.getLanguage() === 'sr';
+    switch (intent) {
+      case 'algo_excels':
+        return isSr
+          ? `${algoNames[0] || '?'} — sjajne performanse`
+          : `${algoNames[0] || '?'} — excels on this map`;
+      case 'algo_struggles':
+        return isSr
+          ? `${algoNames[0] || '?'} — loše performanse`
+          : `${algoNames[0] || '?'} — struggles on this map`;
+      case 'algo_better_than':
+        return isSr
+          ? `${algoNames[0] || '?'} bolji od ${algoNames[1] || '?'}`
+          : `${algoNames[0] || '?'} outperforms ${algoNames[1] || '?'}`;
+      case 'optimal_vs_fast':
+        return isSr
+          ? `${algoNames[0] || '?'} (optimalan) vs ${algoNames[1] || '?'} (brz)`
+          : `${algoNames[0] || '?'} (optimal) vs ${algoNames[1] || '?'} (fast)`;
+      case 'challenging':
+        return isSr ? 'Izazovna mapa' : 'Challenging map';
+      default:
+        return isSr ? 'AI generisana mapa' : 'AI generated map';
+    }
   }
 }

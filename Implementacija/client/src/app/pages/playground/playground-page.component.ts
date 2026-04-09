@@ -202,8 +202,8 @@ interface PlaygroundResult {
         <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; text-align: center;">{{ i18n.t('legend.metrics') }}</div>
         <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ userPath.length }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('legend.length') }}</div></div>
         <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ result?.userCost ?? '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('toolbar.cost') }}</div></div>
-        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ result?.optimalCost ?? '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('toolbar.nodes') }}</div></div>
-        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="!result ? '#78716c' : result.score >= 80 ? '#4ade80' : result.score >= 50 ? '#E8B84D' : '#fb7185'" style="font-size: 28px; font-weight: 800;">{{ result?.score ?? '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('legend.found') }}</div></div>
+        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ result?.optimalCost ?? '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('playground.optimalCost') }}</div></div>
+        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="!result ? '#78716c' : result.score >= 80 ? '#4ade80' : result.score >= 50 ? '#E8B84D' : '#fb7185'" style="font-size: 28px; font-weight: 800;">{{ result?.score ?? '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('playground.score') }}</div></div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <button (click)="onExportJSON()" [disabled]="!result" [style.background]="isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.06)'" [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" [style.border]="isDark ? '1px solid rgba(74,61,50,0.5)' : '1px solid rgba(215,202,188,0.8)'" [style.opacity]="!result ? '0.3' : '1'" style="padding: 7px 0; border-radius: 10px; width: 100%; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">JSON ↓</button>
           <button (click)="onExportCSV()" [disabled]="!result" [style.background]="isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.06)'" [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" [style.border]="isDark ? '1px solid rgba(74,61,50,0.5)' : '1px solid rgba(215,202,188,0.8)'" [style.opacity]="!result ? '0.3' : '1'" style="padding: 7px 0; border-radius: 10px; width: 100%; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">CSV ↓</button>
@@ -595,6 +595,7 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
   onExportJSON(): void {
     if (!this.result) return;
     const grid = this.gridService.getGrid();
+    this.exportService.clearRuns();
     this.exportService.addRun({
       algorithm: 'playground',
       heuristic: '',
@@ -618,6 +619,7 @@ export class PlaygroundPageComponent implements OnInit, OnDestroy {
   onExportCSV(): void {
     if (!this.result) return;
     const grid = this.gridService.getGrid();
+    this.exportService.clearRuns();
     this.exportService.addRun({
       algorithm: 'playground',
       heuristic: '',
