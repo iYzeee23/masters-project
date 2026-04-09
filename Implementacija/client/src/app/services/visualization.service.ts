@@ -19,6 +19,7 @@ export class VisualizationService {
   readonly metrics$ = new BehaviorSubject<AlgorithmResult | null>(null);
   readonly stepIndex$ = new BehaviorSubject<number>(0);
   readonly totalSteps$ = new BehaviorSubject<number>(0);
+  readonly executionTimeMs$ = new BehaviorSubject<number>(0);
 
   constructor(private renderer: GridRendererService) {}
 
@@ -30,6 +31,7 @@ export class VisualizationService {
     this.renderer.resetVisualization();
 
     // Pre-compute all steps (so we can scrub through them)
+    const startTime = performance.now();
     this.algorithm = createAlgorithm(grid, start, goal, options);
     this.allStepEvents = [];
 
@@ -39,6 +41,8 @@ export class VisualizationService {
         this.allStepEvents.push(events);
       }
     }
+    const endTime = performance.now();
+    this.executionTimeMs$.next(endTime - startTime);
 
     this.currentStepIndex = 0;
     this.totalSteps$.next(this.allStepEvents.length);
@@ -73,6 +77,7 @@ export class VisualizationService {
    * Execute a single step forward.
    */
   stepForward(): void {
+    if (this.state$.value === VisualizationState.FINISHED) return;
     if (this.currentStepIndex >= this.allStepEvents.length) {
       this.state$.next(VisualizationState.FINISHED);
       return;
@@ -130,6 +135,7 @@ export class VisualizationService {
     this.stepIndex$.next(0);
     this.state$.next(VisualizationState.IDLE);
     this.metrics$.next(null);
+    this.executionTimeMs$.next(0);
   }
 
   /**
@@ -175,112 +181,6 @@ export class VisualizationService {
     }
 
     this.state$.next(VisualizationState.FINISHED);
-  }
-
-  // ============================================================
-  // SIMULATE LIVE — agent moves, user changes map, rerun from agent position
-  // ============================================================
-
-  private simulateLiveTimer: ReturnType<typeof setTimeout> | null = null;
-  private simulateLivePath: Position[] = [];
-  private simulateLiveAgentIndex = 0;
-  private simulateLiveOptions: AlgorithmOptions | null = null;
-  readonly simulateLiveActive$ = new BehaviorSubject<boolean>(false);
-  readonly agentPosition$ = new BehaviorSubject<Position | null>(null);
-
-  /**
-   * Start Simulate Live mode: agent starts moving along the found path.
-   */
-  startSimulateLive(grid: Grid, start: Position, goal: Position, options: AlgorithmOptions): void {
-    this.stop();
-    this.stopSimulateLive();
-    this.renderer.resetVisualization();
-
-    const { result } = runAlgorithm(grid, start, goal, options);
-    if (!result.path) {
-      this.metrics$.next(result);
-      this.renderer.applyEvents([{ type: EventType.NO_PATH }]);
-      return;
-    }
-
-    this.simulateLivePath = result.path;
-    this.simulateLiveAgentIndex = 0;
-    this.simulateLiveOptions = options;
-    this.metrics$.next(result);
-    this.simulateLiveActive$.next(true);
-
-    // Show initial path
-    this.renderer.applyEvents([{
-      type: EventType.FOUND_PATH,
-      path: result.path,
-      totalCost: result.cost,
-    }]);
-
-    this.moveAgent();
-  }
-
-  /**
-   * Called when user changes the map during Simulate Live — rerun from agent position.
-   */
-  simulateLiveReplan(grid: Grid, goal: Position): void {
-    if (!this.simulateLiveActive$.value || !this.simulateLiveOptions) return;
-
-    const agentPos = this.simulateLivePath[this.simulateLiveAgentIndex];
-    if (!agentPos) return;
-
-    // Pause agent movement
-    if (this.simulateLiveTimer) {
-      clearTimeout(this.simulateLiveTimer);
-      this.simulateLiveTimer = null;
-    }
-
-    // Re-run algorithm from agent's current position
-    const { result } = runAlgorithm(grid, agentPos, goal, this.simulateLiveOptions);
-
-    this.renderer.resetVisualization();
-
-    if (result.path) {
-      this.simulateLivePath = result.path;
-      this.simulateLiveAgentIndex = 0;
-      this.metrics$.next(result);
-
-      this.renderer.applyEvents([{
-        type: EventType.FOUND_PATH,
-        path: result.path,
-        totalCost: result.cost,
-      }]);
-
-      this.moveAgent();
-    } else {
-      this.metrics$.next(result);
-      this.renderer.applyEvents([{ type: EventType.NO_PATH }]);
-    }
-  }
-
-  stopSimulateLive(): void {
-    if (this.simulateLiveTimer) {
-      clearTimeout(this.simulateLiveTimer);
-      this.simulateLiveTimer = null;
-    }
-    this.simulateLiveActive$.next(false);
-    this.agentPosition$.next(null);
-    this.simulateLivePath = [];
-    this.simulateLiveAgentIndex = 0;
-  }
-
-  private moveAgent(): void {
-    if (this.simulateLiveAgentIndex >= this.simulateLivePath.length) {
-      this.simulateLiveActive$.next(false);
-      return;
-    }
-
-    const pos = this.simulateLivePath[this.simulateLiveAgentIndex];
-    this.agentPosition$.next(pos);
-    this.simulateLiveAgentIndex++;
-
-    this.simulateLiveTimer = setTimeout(() => {
-      this.moveAgent();
-    }, this.speed$.value * 3); // Slower than visualization
   }
 
   // ============================================================

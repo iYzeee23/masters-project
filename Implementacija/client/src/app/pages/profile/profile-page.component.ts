@@ -394,10 +394,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')),
       this.auth.user$.subscribe((u) => {
         this.user = u;
-        this.memberSince = new Date().toLocaleDateString('en-US', {
-          month: 'short',
-          year: 'numeric',
-        });
+        if (u?.createdAt) {
+          this.memberSince = new Date(u.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric',
+          });
+        }
       }),
     );
 
@@ -405,6 +407,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.router.navigate(['/auth']);
       return;
     }
+
+    // Load stats from server
+    this.api.getStats().subscribe({
+      next: (s) => (this.stats = s),
+      error: () => {},
+    });
 
     // Load leaderboard
     this.api.getLeaderboard().subscribe({

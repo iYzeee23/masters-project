@@ -6,21 +6,18 @@ import {
   OnDestroy,
   OnInit,
   HostListener,
+  Input,
+  Output,
+  EventEmitter,
 } from '@angular/core';
 
 import { Subscription } from 'rxjs';
-import { GridService } from '../../services/grid.service';
+import { GridService, EditorTool } from '../../services/grid.service';
 import { GridRendererService } from '../../services/grid-renderer.service';
 import { ThemeService } from '../../services/theme.service';
 import { CellType, Position } from '@shared/types';
 
-export enum EditorTool {
-  WALL = 'wall',
-  WEIGHT = 'weight',
-  START = 'start',
-  GOAL = 'goal',
-  ERASE = 'erase',
-}
+export { EditorTool } from '../../services/grid.service';
 
 @Component({
   selector: 'app-grid',
@@ -43,7 +40,9 @@ export enum EditorTool {
         (mouseup)="onMouseUp()"
         (mouseleave)="onMouseUp()"
         (contextmenu)="$event.preventDefault()"
-        class="cursor-crosshair block"
+        [class.cursor-pointer]="mode === 'playground'"
+        [class.cursor-crosshair]="mode === 'editor'"
+        class="block"
       ></canvas>
     </div>
   `,
@@ -51,9 +50,13 @@ export enum EditorTool {
 export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('gridCanvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
+  @Input() mode: 'editor' | 'playground' = 'editor';
+  @Output() cellClicked = new EventEmitter<Position>();
+
   activeTool: EditorTool = EditorTool.WALL;
   weightValue = 3;
   isDark = true;
+
   private isDrawing = false;
   private isDraggingStart = false;
   private isDraggingGoal = false;
@@ -71,6 +74,8 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
       this.gridService.createGrid(25, 50);
     }
     this.subs.push(this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')));
+    this.subs.push(this.gridService.activeTool$.subscribe((t) => (this.activeTool = t)));
+    this.subs.push(this.gridService.weightValue$.subscribe((v) => (this.weightValue = v)));
   }
 
   ngAfterViewInit(): void {
@@ -99,7 +104,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setTool(tool: EditorTool): void {
-    this.activeTool = tool;
+    this.gridService.activeTool$.next(tool);
   }
 
   // ============================================================
@@ -110,6 +115,12 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     event.preventDefault();
     const pos = this.getGridPos(event);
     if (!pos) return;
+
+    // Playground mode: emit cell click for path building
+    if (this.mode === 'playground') {
+      this.cellClicked.emit(pos);
+      return;
+    }
 
     const grid = this.gridService.getGrid();
     if (!grid) return;
@@ -131,6 +142,8 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onMouseMove(event: MouseEvent): void {
+    if (this.mode === 'playground') return;
+
     const pos = this.getGridPos(event);
     if (!pos) return;
 
@@ -166,14 +179,23 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   private getGridPos(event: MouseEvent): Position | null {
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
     return this.renderer.pixelToGrid(x, y);
   }
 
   private applyTool(pos: Position): void {
+    const grid = this.gridService.getGrid();
+    if (!grid) return;
+    const cell = grid.cells[pos.row][pos.col];
+
+    // Never overwrite start or goal with wall/weight/erase during drawing
+    if (cell.type === CellType.START || cell.type === CellType.GOAL) {
+      if (this.activeTool !== EditorTool.START && this.activeTool !== EditorTool.GOAL) {
+        return;
+      }
+    }
+
     switch (this.activeTool) {
       case EditorTool.WALL:
         this.gridService.setCell(pos, CellType.WALL);

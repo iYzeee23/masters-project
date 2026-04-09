@@ -14,7 +14,8 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
   const token = authHeader.slice(7);
   try {
-    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) { res.status(500).json({ error: 'Server misconfiguration' }); return; }
     const decoded = jwt.verify(token, secret) as { userId: string };
     req.userId = decoded.userId;
     next();

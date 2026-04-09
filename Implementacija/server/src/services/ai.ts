@@ -67,6 +67,7 @@ export async function callAI(
       max_tokens: maxTokens,
       temperature,
     }),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!response.ok) {

@@ -6,9 +6,11 @@ import { GridService } from '../../services/grid.service';
 import { GridRendererService } from '../../services/grid-renderer.service';
 import { ThemeService } from '../../services/theme.service';
 import { TranslationService } from '../../services/translation.service';
+import { ExportService } from '../../services/export.service';
+import { AIService } from '../../services/ai.service';
 import { GridComponent } from '../../components/grid/grid.component';
 import { runAlgorithm, ALGORITHM_INFO } from '../../algorithms';
-import { AlgorithmType, HeuristicType, NeighborMode, AlgorithmOptions } from '@shared/types';
+import { AlgorithmType, HeuristicType, NeighborMode, AlgorithmOptions, CellType } from '@shared/types';
 
 interface CompareResult {
   algorithm: AlgorithmType;
@@ -159,6 +161,28 @@ interface CompareResult {
           >
             8
           </button>
+
+          <!-- Swarm weight -->
+          @if (hasSwarmSelected) {
+            <div class="flex items-center gap-2">
+              <span
+                [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+                style="font-size: 11px; white-space: nowrap;"
+              >w:</span>
+              <input
+                type="range"
+                [(ngModel)]="swarmWeight"
+                min="1.5"
+                max="10"
+                step="0.5"
+                style="width: 70px; accent-color: #8B5E50;"
+              />
+              <span
+                [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                style="font-size: 12px; font-weight: 600; min-width: 24px; text-align: center;"
+              >{{ swarmWeight }}</span>
+            </div>
+          }
         </div>
 
         <!-- Run button -->
@@ -174,17 +198,104 @@ interface CompareResult {
       </div>
     </div>
 
-    <!-- ═══ GRID (centered) ═══ -->
-    <div
-      style="display: flex; align-items: start; justify-content: center; padding: 24px 48px;"
-      [style.min-height]="results.length > 0 ? 'auto' : 'calc(100vh - 200px)'"
-    >
-      <app-grid></app-grid>
+    <!-- ═══ GRID (centered with sidebars) ═══ -->
+    <div style="display: flex; justify-content: center; align-items: start; padding: 20px 24px;" [style.min-height]="results.length > 0 ? 'auto' : 'calc(100vh - 200px)'">
+      <div style="display: grid; grid-template-columns: 120px auto 120px; gap: 70px; align-items: start;">
+
+      <!-- LEFT: Legend -->
+      <div
+        [style.background]="isDark ? 'linear-gradient(180deg, #3D3128 0%, #352A21 100%)' : 'linear-gradient(180deg, #FFF9F2 0%, #F5EFE7 100%)'"
+        [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+        [style.box-shadow]="isDark ? '0 12px 80px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px #554536' : '0 12px 80px rgba(0,0,0,0.2), 0 4px 30px rgba(0,0,0,0.12), 0 0 0 1px #D7CABC'"
+        [style.height.px]="gridHeight"
+        style="border-radius: 20px; padding: 14px 14px; display: flex; flex-direction: column; justify-content: space-evenly; box-sizing: border-box; overflow: hidden;"
+      >
+        <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 700; text-align: center;">{{ i18n.t('legend.title') }}</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(126,200,86,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#7EC856' : '#4A8C2A'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.start') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,116,97,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E87461' : '#D05040'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.goal') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(158,128,110,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#9E806E' : '#8B7262'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.wall') }}</span></div>
+        <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; opacity: 0.3;"></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(91,168,212,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#5BA8D4' : '#4A9AC7'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.open') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(155,126,212,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#9B7ED4' : '#7C5FB8'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.closed') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,184,77,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E8B84D' : '#D4952C'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.current') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,124,160,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E87CA0' : '#D4688A'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.path') }}</span></div>
+      </div>
+
+      <!-- CENTER: Grid -->
+      <div>
+        <app-grid></app-grid>
+      </div>
+
+      <!-- RIGHT: Compare Summary -->
+      <div
+        [style.background]="isDark ? 'linear-gradient(180deg, #3D3128 0%, #352A21 100%)' : 'linear-gradient(180deg, #FFF9F2 0%, #F5EFE7 100%)'"
+        [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+        [style.box-shadow]="isDark ? '0 12px 80px rgba(0,0,0,0.6), 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px #554536' : '0 12px 80px rgba(0,0,0,0.2), 0 4px 30px rgba(0,0,0,0.12), 0 0 0 1px #D7CABC'"
+        [style.opacity]="results.length ? '1' : '0.4'"
+        [style.height.px]="gridHeight"
+        style="border-radius: 20px; padding: 14px 14px; display: flex; flex-direction: column; justify-content: space-evenly; box-sizing: border-box; overflow: hidden; transition: opacity 0.3s ease;"
+      >
+        <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; text-align: center;">{{ i18n.t('legend.metrics') }}</div>
+        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ results.length || 0 }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('compare.algos') }}</div></div>
+        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ bestExpanded || '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('compare.bestNodes') }}</div></div>
+        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ bestCost || '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('compare.bestCost') }}</div></div>
+        <div style="text-align: center; transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'"><div [style.color]="isDark ? '#EDE0D0' : '#4A3428'" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ bestTime ? (bestTime | number: '1.0-0') + 'ms' : '—' }}</div><div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 13px; text-transform: capitalize; letter-spacing: 0.02em; margin-top: 2px; font-weight: 500;">{{ i18n.t('compare.bestTime') }}</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button (click)="onExportCompare()" [disabled]="!results.length" [style.background]="isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.06)'" [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" [style.border]="isDark ? '1px solid rgba(74,61,50,0.5)' : '1px solid rgba(215,202,188,0.8)'" [style.opacity]="!results.length ? '0.3' : '1'" style="padding: 7px 0; border-radius: 10px; width: 100%; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">JSON ↓</button>
+          <button (click)="onExportCompareCSV()" [disabled]="!results.length" [style.background]="isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.06)'" [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" [style.border]="isDark ? '1px solid rgba(74,61,50,0.5)' : '1px solid rgba(215,202,188,0.8)'" [style.opacity]="!results.length ? '0.3' : '1'" style="padding: 7px 0; border-radius: 10px; width: 100%; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">CSV ↓</button>
+        </div>
+      </div>
+      </div>
     </div>
 
     <!-- ═══ RESULTS TABLE ═══ -->
     @if (results.length > 0) {
-      <div style="padding: 0 48px 40px;">
+      <div style="padding: 0 48px 16px;">
+        <!-- Export + AI Insight buttons -->
+        <div class="flex items-center gap-3 justify-end" style="margin-bottom: 12px;">
+          <button
+            (click)="onExportCompare()"
+            [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+            class="text-xs hover:opacity-70 transition-all cursor-pointer"
+            style="padding: 6px 14px; border-radius: 10px; background: transparent;"
+          >
+            JSON ↓
+          </button>
+          <button
+            (click)="onExportCompareCSV()"
+            [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+            [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+            class="text-xs hover:opacity-70 transition-all cursor-pointer"
+            style="padding: 6px 14px; border-radius: 10px; background: transparent;"
+          >
+            CSV ↓
+          </button>
+          <button
+            (click)="onCompareInsight()"
+            [disabled]="insightLoading"
+            [style.opacity]="insightLoading ? '0.5' : '1'"
+            style="padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(168,85,247,0.10)); color: #A78BFA;"
+          >
+            {{ insightLoading ? i18n.t('compare.insightLoading') : i18n.t('compare.insight') }}
+          </button>
+        </div>
+        @if (insightText) {
+          <div
+            [style.background]="isDark ? '#322820' : '#FFFCF8'"
+            [style.border]="isDark ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(139,92,246,0.2)'"
+            [style.box-shadow]="isDark ? '0 8px 32px rgba(0,0,0,0.3)' : '0 8px 24px rgba(0,0,0,0.06)'"
+            style="border-radius: 16px; padding: 18px 22px; margin-bottom: 16px;"
+            class="animate-fade-in"
+          >
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 10px; color: #7C3AED;">
+              ✦ AI Insight
+            </div>
+            <div [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'" style="font-size: 13px; line-height: 1.6;">
+              {{ insightText }}
+            </div>
+          </div>
+        }
         <div
           [style.background]="isDark ? '#3D3128' : '#FFFCF8'"
           [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
@@ -337,6 +448,7 @@ interface CompareResult {
 export class ComparePageComponent implements OnInit, OnDestroy {
   isDark = true;
   private subs: Subscription[] = [];
+  private insightSub: Subscription | null = null;
 
   selectedAlgorithms = new Set<AlgorithmType>([
     AlgorithmType.BFS,
@@ -346,9 +458,13 @@ export class ComparePageComponent implements OnInit, OnDestroy {
   ]);
   heuristic: HeuristicType = HeuristicType.MANHATTAN;
   neighborMode: NeighborMode = NeighborMode.FOUR;
+  swarmWeight = 2;
   isRunning = false;
   showSettingsHint = false;
   results: CompareResult[] = [];
+  insightText = '';
+  insightLoading = false;
+  gridHeight = 0;
 
   bestExpanded = 0;
   bestCost = 0;
@@ -389,6 +505,8 @@ export class ComparePageComponent implements OnInit, OnDestroy {
   constructor(
     private gridService: GridService,
     private themeService: ThemeService,
+    private aiService: AIService,
+    public exportService: ExportService,
     public i18n: TranslationService,
   ) {}
 
@@ -396,11 +514,31 @@ export class ComparePageComponent implements OnInit, OnDestroy {
     if (!this.gridService.getGrid()) {
       this.gridService.createGrid(25, 50);
     }
-    this.subs.push(this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')));
+    this.gridHeight = this.calcGridHeight(this.gridService.getGrid()?.rows ?? 25, this.gridService.getGrid()?.cols ?? 50);
+    this.subs.push(
+      this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')),
+      this.gridService.grid$.subscribe((grid) => {
+        if (grid) {
+          this.gridHeight = this.calcGridHeight(grid.rows, grid.cols);
+        }
+      }),
+    );
   }
 
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
+    if (this.insightSub) this.insightSub.unsubscribe();
+  }
+
+  private calcGridHeight(rows: number, cols: number): number {
+    const headerToolbar = 140;
+    const shadowPadding = 100;
+    const availableWidth = window.innerWidth - shadowPadding;
+    const availableHeight = window.innerHeight - headerToolbar - shadowPadding;
+    const cellW = Math.floor(availableWidth / cols);
+    const cellH = Math.floor(availableHeight / rows);
+    const cellSize = Math.max(10, Math.min(28, cellW, cellH));
+    return rows * cellSize;
   }
 
   toggleAlgorithm(algo: AlgorithmType): void {
@@ -424,6 +562,10 @@ export class ComparePageComponent implements OnInit, OnDestroy {
     return colors[index % colors.length];
   }
 
+  get hasSwarmSelected(): boolean {
+    return this.selectedAlgorithms.has(AlgorithmType.SWARM) || this.selectedAlgorithms.has(AlgorithmType.CONVERGENT_SWARM);
+  }
+
   runCompare(): void {
     const grid = this.gridService.getGrid();
     if (!grid) return;
@@ -439,11 +581,9 @@ export class ComparePageComponent implements OnInit, OnDestroy {
           heuristic: this.heuristic,
           neighborMode: this.neighborMode,
           swarmWeight:
-            algo === AlgorithmType.SWARM
-              ? 2
-              : algo === AlgorithmType.CONVERGENT_SWARM
-                ? 5
-                : undefined,
+            algo === AlgorithmType.SWARM || algo === AlgorithmType.CONVERGENT_SWARM
+              ? this.swarmWeight
+              : undefined,
         };
 
         const { result, executionTimeMs } = runAlgorithm(grid, grid.start, grid.goal, options);
@@ -466,11 +606,102 @@ export class ComparePageComponent implements OnInit, OnDestroy {
       const withPath = this.results.filter((r) => r.foundPath);
       this.bestExpanded = withPath.length ? Math.min(...withPath.map((r) => r.expandedCount)) : 0;
       this.bestCost = withPath.length ? Math.min(...withPath.map((r) => r.pathCost)) : 0;
-      this.bestTime = this.results.length
-        ? Math.min(...this.results.map((r) => r.executionTimeMs))
+      this.bestTime = withPath.length
+        ? Math.min(...withPath.map((r) => r.executionTimeMs))
         : 0;
 
       this.isRunning = false;
     }, 10);
+  }
+
+  onCompareInsight(): void {
+    const grid = this.gridService.getGrid();
+    if (!grid || this.results.length === 0) return;
+
+    this.insightLoading = true;
+    this.insightText = '';
+    if (this.insightSub) this.insightSub.unsubscribe();
+    this.insightSub = this.aiService.getCompareInsight(this.results, grid).subscribe({
+      next: (res) => {
+        this.insightText = res.insight;
+        this.insightLoading = false;
+      },
+      error: () => {
+        this.insightText = '';
+        this.insightLoading = false;
+      },
+    });
+  }
+
+  onExportCompare(): void {
+    if (this.results.length === 0) return;
+    this.exportService.clearRuns();
+    const grid = this.gridService.getGrid();
+    if (!grid) return;
+    for (const r of this.results) {
+      this.exportService.addRun({
+        algorithm: r.algorithm,
+        heuristic: this.heuristic,
+        neighborMode: this.neighborMode,
+        swarmWeight: this.swarmWeight,
+        expandedNodes: r.expandedCount,
+        maxFrontierSize: r.maxFrontierSize,
+        pathCost: r.pathCost === Infinity ? null : r.pathCost,
+        pathLength: r.pathLength,
+        totalSteps: r.totalSteps,
+        executionTimeMs: r.executionTimeMs,
+        foundPath: r.foundPath,
+        mapRows: grid.rows,
+        mapCols: grid.cols,
+        wallCount: this.countWalls(grid),
+        weightedCount: this.countWeighted(grid),
+        timestamp: new Date().toISOString(),
+      });
+    }
+    this.exportService.exportCompareJSON(this.results);
+  }
+
+  onExportCompareCSV(): void {
+    if (this.results.length === 0) return;
+    this.exportService.clearRuns();
+    const grid = this.gridService.getGrid();
+    if (!grid) return;
+    for (const r of this.results) {
+      this.exportService.addRun({
+        algorithm: r.algorithm,
+        heuristic: this.heuristic,
+        neighborMode: this.neighborMode,
+        swarmWeight: this.swarmWeight,
+        expandedNodes: r.expandedCount,
+        maxFrontierSize: r.maxFrontierSize,
+        pathCost: r.pathCost === Infinity ? null : r.pathCost,
+        pathLength: r.pathLength,
+        totalSteps: r.totalSteps,
+        executionTimeMs: r.executionTimeMs,
+        foundPath: r.foundPath,
+        mapRows: grid.rows,
+        mapCols: grid.cols,
+        wallCount: this.countWalls(grid),
+        weightedCount: this.countWeighted(grid),
+        timestamp: new Date().toISOString(),
+      });
+    }
+    this.exportService.exportCSV();
+  }
+
+  private countWalls(grid: any): number {
+    let count = 0;
+    for (let r = 0; r < grid.rows; r++)
+      for (let c = 0; c < grid.cols; c++)
+        if (grid.cells[r][c].type === CellType.WALL) count++;
+    return count;
+  }
+
+  private countWeighted(grid: any): number {
+    let count = 0;
+    for (let r = 0; r < grid.rows; r++)
+      for (let c = 0; c < grid.cols; c++)
+        if (grid.cells[r][c].weight > 1) count++;
+    return count;
   }
 }

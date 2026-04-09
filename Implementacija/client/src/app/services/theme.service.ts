@@ -34,10 +34,10 @@ const DARK_COLORS: ThemeColors = {
   wall: '#9E806E',         // sandy taupe (distinct)
   start: '#7EC856',        // bright warm green
   goal: '#E87461',         // coral-terra
-  open: '#D4B896',         // warm sand
-  closed: '#8B7460',       // medium taupe
+  open: '#5BA8D4',         // sky blue (frontier)
+  closed: '#9B7ED4',       // violet (explored)
   current: '#E8B84D',      // bright warm amber
-  path: '#D4917E',         // warm salmon
+  path: '#E87CA0',         // warm pink (found path)
   weightLow: '#43372C',    // surface
   weightMed: '#544536',    // mid border
   weightHigh: '#655642',   // lighter border
@@ -52,10 +52,10 @@ const LIGHT_COLORS: ThemeColors = {
   wall: '#8B7262',         // warm medium brown (distinct from goal)
   start: '#4A8C2A',        // fresh green
   goal: '#D05040',         // warm red-coral
-  open: '#D8C3B6',         // soft accent
-  closed: '#A78D78',       // taupe
+  open: '#4A9AC7',         // sky blue (frontier)
+  closed: '#7C5FB8',       // violet (explored)
   current: '#D4952C',      // warm gold
-  path: '#C4A399',         // blush
+  path: '#D4688A',         // warm pink (found path)
   weightLow: '#EDE4D8',    // secondary bg
   weightMed: '#D7CABC',    // border
   weightHigh: '#C4B5A5',   // darker border

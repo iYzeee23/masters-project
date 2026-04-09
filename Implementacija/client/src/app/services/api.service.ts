@@ -29,7 +29,7 @@ export class ApiService {
   }
 
   getMap(id: string): Observable<any> {
-    return this.http.get(`${this.API}/maps/${id}`);
+    return this.http.get(`${this.API}/maps/${id}`, { headers: this.headers });
   }
 
   saveMap(data: any): Observable<any> {
@@ -75,6 +75,14 @@ export class ApiService {
 
   getMyAttempts(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API}/playground/my-attempts`, { headers: this.headers });
+  }
+
+  // ============================================================
+  // STATS
+  // ============================================================
+
+  getStats(): Observable<{ runs: number; maps: number; score: number }> {
+    return this.http.get<{ runs: number; maps: number; score: number }>(`${this.API}/auth/stats`, { headers: this.headers });
   }
 
   // ============================================================

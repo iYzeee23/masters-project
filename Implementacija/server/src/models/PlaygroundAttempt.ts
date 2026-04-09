@@ -28,7 +28,7 @@ const PlaygroundAttemptSchema = new Schema<IPlaygroundAttempt>(
     mapId: {
       type: Schema.Types.ObjectId,
       ref: 'Map',
-      required: true,
+      default: null,
     },
     userPath: { type: [[Number]], default: [] },
     userDeclaredNoPath: { type: Boolean, default: false },

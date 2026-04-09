@@ -55,7 +55,7 @@ router.post(
             resource_type: 'image',
           },
           (error, result) => {
-            if (error || !result) reject(error);
+            if (error || !result) reject(error || new Error('Cloudinary upload returned empty result'));
             else resolve(result);
           },
         );

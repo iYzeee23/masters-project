@@ -2,12 +2,11 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { PlaygroundAttempt } from '../models';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { io } from '../index';
 
 const router = Router();
 
 const createAttemptSchema = z.object({
-  mapId: z.string(),
+  mapId: z.string().optional(),
   userPath: z.array(z.tuple([z.number(), z.number()])),
   userDeclaredNoPath: z.boolean(),
   optimalCost: z.number().nullable(),
@@ -20,6 +19,27 @@ const createAttemptSchema = z.object({
   }),
   timeSpentMs: z.number(),
 });
+
+/** Recalculate score server-side to prevent tampering */
+function validateScore(data: z.infer<typeof createAttemptSchema>): number {
+  const { breakdown, userDeclaredNoPath, optimalCost, userCost } = data;
+
+  // Clamp breakdown values to valid ranges
+  const costPenalty = Math.max(0, Math.min(50, breakdown.costPenalty));
+  const invalidMovePenalty = Math.max(0, Math.min(50, breakdown.invalidMovePenalty));
+  const speedBonus = Math.max(0, Math.min(10, breakdown.speedBonus));
+
+  if (userDeclaredNoPath && optimalCost === null) {
+    // Correctly declared no path
+    return Math.min(100, 100 + speedBonus);
+  }
+  if (userDeclaredNoPath && optimalCost !== null) {
+    // Wrongly declared no path
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, 100 - costPenalty - invalidMovePenalty + speedBonus));
+}
 
 // GET /api/playground/leaderboard
 router.get('/leaderboard', async (_req, res: Response) => {
@@ -59,7 +79,8 @@ router.get('/leaderboard', async (_req, res: Response) => {
       },
     ]);
     res.json(leaderboard);
-  } catch {
+  } catch (err) {
+    console.error('[playground]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -73,19 +94,29 @@ router.post('/attempts', authMiddleware, async (req: AuthRequest, res: Response)
       return;
     }
 
+    // Recalculate score server-side
+    const validatedScore = validateScore(parsed.data);
+
     const attempt = await PlaygroundAttempt.create({
       ...parsed.data,
+      score: validatedScore,
+      breakdown: {
+        costPenalty: Math.max(0, Math.min(50, parsed.data.breakdown.costPenalty)),
+        invalidMovePenalty: Math.max(0, Math.min(50, parsed.data.breakdown.invalidMovePenalty)),
+        speedBonus: Math.max(0, Math.min(10, parsed.data.breakdown.speedBonus)),
+      },
       userId: req.userId,
     });
 
     // Emit leaderboard update via Socket.io
-    io.emit('leaderboard:update', {
+    req.app.locals.io?.emit('leaderboard:update', {
       userId: req.userId,
-      score: parsed.data.score,
+      score: validatedScore,
     });
 
     res.status(201).json(attempt);
-  } catch {
+  } catch (err) {
+    console.error('[playground]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -98,7 +129,8 @@ router.get('/my-attempts', authMiddleware, async (req: AuthRequest, res: Respons
       .limit(100)
       .populate('mapId', 'name');
     res.json(attempts);
-  } catch {
+  } catch (err) {
+    console.error('[playground]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

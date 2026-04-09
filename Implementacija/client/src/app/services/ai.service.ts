@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, timeout } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Grid, CellType } from '@shared/types';
 
@@ -85,7 +85,7 @@ export class AIService {
       mapSummary: this.summarizeGrid(grid),
       metrics,
       traceHighlights,
-    }, { headers: this.headers });
+    }, { headers: this.headers }).pipe(timeout(30000));
   }
 
   /**
@@ -96,7 +96,7 @@ export class AIService {
       description,
       rows,
       cols,
-    }, { headers: this.headers });
+    }, { headers: this.headers }).pipe(timeout(30000));
   }
 
   /**
@@ -105,7 +105,7 @@ export class AIService {
   getRecommendation(grid: Grid): Observable<AIRecommendation> {
     return this.http.post<AIRecommendation>(`${this.API}/recommend`, {
       mapSummary: this.summarizeGrid(grid),
-    }, { headers: this.headers });
+    }, { headers: this.headers }).pipe(timeout(30000));
   }
 
   /**
@@ -115,7 +115,7 @@ export class AIService {
     return this.http.post<{ explanation: string }>(`${this.API}/explain`, {
       context,
       question,
-    }, { headers: this.headers });
+    }, { headers: this.headers }).pipe(timeout(30000));
   }
 
   /**
@@ -125,6 +125,6 @@ export class AIService {
     return this.http.post<{ insight: string }>(`${this.API}/compare-insight`, {
       results,
       mapSummary: this.summarizeGrid(grid),
-    }, { headers: this.headers });
+    }, { headers: this.headers }).pipe(timeout(30000));
   }
 }

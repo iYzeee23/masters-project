@@ -1,11 +1,22 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { z } from 'zod';
-import { User } from '../models';
+import rateLimit from 'express-rate-limit';
+import { User, Run, MapModel, PlaygroundAttempt } from '../models';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+// Rate limit login attempts: 10 per 15 minutes per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const registerSchema = z.object({
   username: z.string().min(3).max(30).trim(),
@@ -42,7 +53,8 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const user = await User.create({ username, email, firstName, lastName, passwordHash });
 
-    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) { res.status(500).json({ error: 'Server misconfiguration' }); return; }
     const token = jwt.sign({ userId: user._id }, secret, { expiresIn: '7d' });
 
     res.status(201).json({
@@ -54,6 +66,7 @@ router.post('/register', async (req: Request, res: Response) => {
         firstName: user.firstName,
         lastName: user.lastName,
         avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
       },
     });
   } catch (err) {
@@ -62,7 +75,7 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -83,7 +96,8 @@ router.post('/login', async (req: Request, res: Response) => {
       return;
     }
 
-    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) { res.status(500).json({ error: 'Server misconfiguration' }); return; }
     const token = jwt.sign({ userId: user._id }, secret, { expiresIn: '7d' });
 
     res.json({
@@ -95,6 +109,7 @@ router.post('/login', async (req: Request, res: Response) => {
         firstName: user.firstName,
         lastName: user.lastName,
         avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
       },
     });
   } catch (err) {
@@ -118,6 +133,29 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
       firstName: user.firstName,
       lastName: user.lastName,
       avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/auth/stats
+router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const [runs, maps, scoreAgg] = await Promise.all([
+      Run.countDocuments({ userId: req.userId }),
+      MapModel.countDocuments({ userId: req.userId }),
+      PlaygroundAttempt.aggregate([
+        { $match: { userId: new mongoose.Types.ObjectId(req.userId) } },
+        { $group: { _id: null, totalScore: { $sum: '$score' } } },
+      ]),
+    ]);
+
+    res.json({
+      runs,
+      maps,
+      score: scoreAgg.length > 0 ? scoreAgg[0].totalScore : 0,
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

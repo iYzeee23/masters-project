@@ -18,6 +18,7 @@ export class BFS implements PathfindingAlgorithm {
   private queue: Position[] = [];
   private visited: Set<string> = new Set();
   private cameFrom: Map<string, Position> = new Map();
+  private dist: Map<string, number> = new Map();
 
   private trace: AlgorithmEvent[] = [];
   private done = false;
@@ -34,6 +35,7 @@ export class BFS implements PathfindingAlgorithm {
     this.queue = [start];
     this.visited = new Set([posKey(start)]);
     this.cameFrom = new Map();
+    this.dist = new Map([[posKey(start), 0]]);
     this.trace = [];
     this.done = false;
     this.expandedCount = 0;
@@ -122,7 +124,8 @@ export class BFS implements PathfindingAlgorithm {
       this.cameFrom.set(neighborKey, current);
       this.queue.push(neighbor);
 
-      const depth = this.getDepth(neighbor);
+      const depth = (this.dist.get(currentKey) ?? 0) + 1;
+      this.dist.set(neighborKey, depth);
       const openAddEvent: AlgorithmEvent = {
         type: EventType.OPEN_ADD,
         node: neighbor,
@@ -157,16 +160,6 @@ export class BFS implements PathfindingAlgorithm {
 
   getTrace(): AlgorithmEvent[] {
     return [...this.trace];
-  }
-
-  private getDepth(pos: Position): number {
-    let depth = 0;
-    let key = posKey(pos);
-    while (this.cameFrom.has(key)) {
-      key = posKey(this.cameFrom.get(key)!);
-      depth++;
-    }
-    return depth;
   }
 
   private reconstructPath(current: Position): Position[] {

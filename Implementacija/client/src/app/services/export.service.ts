@@ -51,7 +51,7 @@ export class ExportService {
     const rows = this.runs.map(run =>
       headers.map(h => {
         const val = (run as any)[h];
-        return val === null ? '' : String(val);
+        return this.escapeCsvField(val);
       }).join(','),
     );
 
@@ -70,11 +70,20 @@ export class ExportService {
     const rows = results.map(r =>
       headers.map(h => {
         const val = (r as any)[h];
-        return val === null ? '' : String(val);
+        return this.escapeCsvField(val);
       }).join(','),
     );
     const csv = [headers.join(','), ...rows].join('\n');
     this.download(csv, 'pathfinder-compare.csv', 'text/csv');
+  }
+
+  private escapeCsvField(val: unknown): string {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
   }
 
   private download(content: string, filename: string, mimeType: string): void {

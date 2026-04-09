@@ -1,17 +1,58 @@
 import { Router, Response } from 'express';
+import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { callAI } from '../services/ai';
 
 const router = Router();
 
+// Rate limit: max 20 AI requests per minute per IP
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many AI requests, please try again later' },
+});
+
+router.use(aiLimiter);
+
+const tutorSchema = z.object({
+  algorithm: z.string().min(1).max(50),
+  mapSummary: z.record(z.string(), z.unknown()),
+  metrics: z.record(z.string(), z.unknown()).optional(),
+  traceHighlights: z.array(z.unknown()).optional(),
+});
+
+const generateSchema = z.object({
+  description: z.string().min(1).max(2000),
+  rows: z.number().int().min(5).max(200).optional(),
+  cols: z.number().int().min(5).max(200).optional(),
+});
+
+const recommendSchema = z.object({
+  mapSummary: z.record(z.string(), z.unknown()),
+});
+
+const explainSchema = z.object({
+  context: z.string().min(1).max(5000),
+  question: z.string().min(1).max(2000),
+});
+
+const compareInsightSchema = z.object({
+  results: z.array(z.unknown()).min(1),
+  mapSummary: z.record(z.string(), z.unknown()),
+});
+
 // POST /api/ai/tutor — Key moments from trace
 router.post('/tutor', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { algorithm, mapSummary, metrics, traceHighlights } = req.body;
-    if (!algorithm || !mapSummary) {
-      res.status(400).json({ error: 'algorithm and mapSummary required' });
+    const parsed = tutorSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
+    const { algorithm, mapSummary, metrics, traceHighlights } = parsed.data;
 
     const prompt = `You are an educational assistant for a pathfinding visualizer. 
 Analyze the execution of the ${algorithm} algorithm and identify the 3-5 most significant moments.
@@ -28,9 +69,11 @@ Respond in JSON format: { "keyMoments": [{ "stepIndex": number, "explanation": s
 Only respond with valid JSON, no markdown.`;
 
     const result = await callAI(prompt);
-    const parsed = JSON.parse(result);
-    res.json(parsed);
+    let aiResponse;
+    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
+    res.json(aiResponse);
   } catch (err) {
+    console.error('[AI tutor]', err);
     res.status(500).json({ error: 'AI request failed' });
   }
 });
@@ -38,11 +81,12 @@ Only respond with valid JSON, no markdown.`;
 // POST /api/ai/generate — Generate map from description
 router.post('/generate', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { description, rows = 25, cols = 50 } = req.body;
-    if (!description) {
-      res.status(400).json({ error: 'description required' });
+    const parsed = generateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
+    const { description, rows = 25, cols = 50 } = parsed.data;
 
     const prompt = `You are a map generator for a pathfinding visualizer on a ${rows}x${cols} grid.
 The user wants: "${description}"
@@ -64,15 +108,17 @@ Respond in JSON format:
 Only respond with valid JSON, no markdown.`;
 
     const result = await callAI(prompt);
-    const parsed = JSON.parse(result);
+    let aiResponse;
+    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
     res.json({
       rows,
       cols,
       start: [Math.floor(rows/2), Math.floor(cols/4)],
       goal: [Math.floor(rows/2), Math.floor(3*cols/4)],
-      ...parsed,
+      ...aiResponse,
     });
   } catch (err) {
+    console.error('[AI generate]', err);
     res.status(500).json({ error: 'AI request failed' });
   }
 });
@@ -80,11 +126,12 @@ Only respond with valid JSON, no markdown.`;
 // POST /api/ai/recommend — Recommend best/worst algorithm for a map
 router.post('/recommend', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { mapSummary } = req.body;
-    if (!mapSummary) {
-      res.status(400).json({ error: 'mapSummary required' });
+    const parsed = recommendSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
+    const { mapSummary } = parsed.data;
 
     const prompt = `You are an algorithm advisor for a pathfinding visualizer.
 Given this map configuration, predict which algorithm will perform BEST and which will perform WORST.
@@ -103,9 +150,11 @@ Respond in JSON format:
 Confidence is 0-100. Only respond with valid JSON, no markdown.`;
 
     const result = await callAI(prompt);
-    const parsed = JSON.parse(result);
-    res.json(parsed);
+    let aiResponse;
+    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
+    res.json(aiResponse);
   } catch (err) {
+    console.error('[AI recommend]', err);
     res.status(500).json({ error: 'AI request failed' });
   }
 });
@@ -113,11 +162,12 @@ Confidence is 0-100. Only respond with valid JSON, no markdown.`;
 // POST /api/ai/explain — Contextual explanation
 router.post('/explain', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { context, question } = req.body;
-    if (!context || !question) {
-      res.status(400).json({ error: 'context and question required' });
+    const parsed = explainSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
+    const { context, question } = parsed.data;
 
     const prompt = `You are an educational assistant for a pathfinding visualizer.
 The user is looking at: ${context}
@@ -128,9 +178,11 @@ Respond in JSON format: { "explanation": string }
 Only respond with valid JSON, no markdown.`;
 
     const result = await callAI(prompt);
-    const parsed = JSON.parse(result);
-    res.json(parsed);
+    let aiResponse;
+    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
+    res.json(aiResponse);
   } catch (err) {
+    console.error('[AI explain]', err);
     res.status(500).json({ error: 'AI request failed' });
   }
 });
@@ -138,11 +190,12 @@ Only respond with valid JSON, no markdown.`;
 // POST /api/ai/compare-insight — Summary after compare run
 router.post('/compare-insight', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { results, mapSummary } = req.body;
-    if (!results || !mapSummary) {
-      res.status(400).json({ error: 'results and mapSummary required' });
+    const parsed = compareInsightSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
+    const { results, mapSummary } = parsed.data;
 
     const prompt = `You are an educational assistant for a pathfinding visualizer.
 The user ran multiple algorithms on the same map and got these results:
@@ -159,9 +212,11 @@ Respond in JSON format: { "insight": string }
 Only respond with valid JSON, no markdown.`;
 
     const result = await callAI(prompt);
-    const parsed = JSON.parse(result);
-    res.json(parsed);
+    let aiResponse;
+    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
+    res.json(aiResponse);
   } catch (err) {
+    console.error('[AI compare-insight]', err);
     res.status(500).json({ error: 'AI request failed' });
   }
 });

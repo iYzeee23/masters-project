@@ -54,9 +54,13 @@ export class GridRendererService {
     this.renderState.goalKey = posKey(grid.goal);
     this.resetVisualization();
 
-    if (this.canvas) {
-      this.canvas.width = grid.cols * this.cellSize;
-      this.canvas.height = grid.rows * this.cellSize;
+    if (this.canvas && this.ctx) {
+      const dpr = window.devicePixelRatio || 1;
+      this.canvas.width = grid.cols * this.cellSize * dpr;
+      this.canvas.height = grid.rows * this.cellSize * dpr;
+      this.canvas.style.width = grid.cols * this.cellSize + 'px';
+      this.canvas.style.height = grid.rows * this.cellSize + 'px';
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
     this.render();
@@ -170,9 +174,11 @@ export class GridRendererService {
     const size = this.cellSize;
     const c = this.colors;
 
-    // Clear
+    // Clear (use logical dimensions, not canvas pixel dimensions)
+    const logicalWidth = grid.cols * size;
+    const logicalHeight = grid.rows * size;
     ctx.fillStyle = c.background;
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.fillRect(0, 0, logicalWidth, logicalHeight);
 
     // Draw cells
     for (let row = 0; row < grid.rows; row++) {

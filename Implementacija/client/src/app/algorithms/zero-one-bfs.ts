@@ -19,6 +19,7 @@ export class ZeroOneBFS implements PathfindingAlgorithm {
   private deque: Position[] = [];
   private dist: Map<string, number> = new Map();
   private cameFrom: Map<string, Position> = new Map();
+  private closedSet: Set<string> = new Set();
 
   private trace: AlgorithmEvent[] = [];
   private done = false;
@@ -35,6 +36,7 @@ export class ZeroOneBFS implements PathfindingAlgorithm {
     this.deque = [start];
     this.dist = new Map([[posKey(start), 0]]);
     this.cameFrom = new Map();
+    this.closedSet = new Set();
     this.trace = [];
     this.done = false;
     this.expandedCount = 0;
@@ -79,6 +81,12 @@ export class ZeroOneBFS implements PathfindingAlgorithm {
     const current = this.deque.shift()!;
     const currentKey = posKey(current);
     const currentDist = this.dist.get(currentKey)!;
+
+    // Skip stale deque entries (node was already expanded at a better distance)
+    if (this.closedSet.has(currentKey)) {
+      return events;
+    }
+    this.closedSet.add(currentKey);
 
     const setCurrentEvent: AlgorithmEvent = {
       type: EventType.SET_CURRENT,

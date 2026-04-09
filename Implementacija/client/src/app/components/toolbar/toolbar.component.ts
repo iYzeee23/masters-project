@@ -8,6 +8,8 @@ import { ThemeService } from '../../services/theme.service';
 import { TranslationService } from '../../services/translation.service';
 import { ExportService } from '../../services/export.service';
 import { AIService } from '../../services/ai.service';
+import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { EditorTool } from '../grid/grid.component';
 import { generateMap, GeneratorType, GENERATOR_INFO } from '../../generators';
 import {
@@ -27,6 +29,7 @@ type PopupType =
   | 'ai'
   | 'generators'
   | 'actions'
+  | 'loadmap'
   | null;
 
 @Component({
@@ -227,6 +230,25 @@ type PopupType =
                     >
                       {{ loadingAi ? i18n.t('toolbar.analyzing') : i18n.t('toolbar.analyzeSteps') }}
                     </button>
+                    @if (keyMoments.length > 0) {
+                      <div style="margin-top: 14px; max-height: 200px; overflow-y: auto;">
+                        @for (km of keyMoments; track km.stepIndex) {
+                          <div
+                            [style.background]="isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.05)'"
+                            [style.border]="isDark ? '1px solid rgba(124,58,237,0.15)' : '1px solid rgba(124,58,237,0.12)'"
+                            style="border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;"
+                          >
+                            <div style="font-size: 10px; font-weight: 700; color: #7C3AED; margin-bottom: 4px;">
+                              Step {{ km.stepIndex }}
+                            </div>
+                            <div
+                              [style.color]="isDark ? '#D3C3B0' : '#5A4A3E'"
+                              style="font-size: 12px; line-height: 1.5;"
+                            >{{ km.explanation }}</div>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
                 }
                 @if (activeAiTab === 'generate') {
@@ -353,6 +375,19 @@ type PopupType =
           >
             {{ i18n.t('toolbar.end') }}
           </button>
+          <div
+            [style.background]="isDark ? '#4A3D32' : '#D7CABC'"
+            style="width: 1px; height: 20px;"
+          ></div>
+          <button
+            (click)="onPostEditResolve()"
+            [disabled]="vizState !== 'finished'"
+            [class]="toolbarBtnClass"
+            class="rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+            style="padding: 8px 12px;"
+          >
+            {{ i18n.t('toolbar.reResolve') }}
+          </button>
         </div>
 
         <!-- ═══ GROUP 3: Tools + Speed + Settings ═══ -->
@@ -431,7 +466,8 @@ type PopupType =
                       >
                       <input
                         type="range"
-                        [(ngModel)]="weightValue"
+                        [ngModel]="weightValue"
+                        (ngModelChange)="onWeightChange($event)"
                         [min]="2"
                         [max]="10"
                         [step]="1"
@@ -737,6 +773,69 @@ type PopupType =
               </div>
             }
           </div>
+          @if (isLoggedIn) {
+            <button
+              (click)="onSaveMap()"
+              [class]="toolbarBtnClass"
+              class="rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+              style="padding: 8px 12px;"
+            >
+              {{ i18n.t('toolbar.saveMap') }}
+            </button>
+            <div class="relative">
+              <button
+                (click)="togglePopup('loadmap')"
+                [class]="toolbarBtnClass"
+                class="rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+                style="padding: 8px 12px;"
+              >
+                {{ i18n.t('toolbar.loadMap') }}
+              </button>
+              @if (activePopup === 'loadmap') {
+                <div
+                  [class]="popupClass"
+                  class="absolute top-full right-0 mt-3 w-72 rounded-2xl animate-slide-down z-50"
+                  style="padding: 10px; max-height: 360px; overflow-y: auto;"
+                >
+                  <div
+                    [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+                    style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; padding: 8px 14px 6px;"
+                  >
+                    {{ i18n.t('toolbar.myMaps') }}
+                  </div>
+                  @if (savedMaps.length === 0) {
+                    <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="padding: 12px 14px; font-size: 12px;">
+                      {{ i18n.t('toolbar.noMaps') }}
+                    </div>
+                  }
+                  @for (m of savedMaps; track m._id) {
+                    <div class="flex items-center justify-between"
+                      [class]="isDark ? 'hover:bg-[#3D3128]' : 'hover:bg-[#F5EFE7]'"
+                      style="border-radius: 10px; padding: 8px 14px; transition: all 0.15s;"
+                    >
+                      <button
+                        (click)="loadMap(m)"
+                        [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                        style="font-size: 13px; font-weight: 500; background: none; border: none; cursor: pointer; text-align: left; flex: 1;"
+                      >
+                        {{ m.name }}
+                        <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 10px; margin-left: 6px;">
+                          {{ m.rows }}×{{ m.cols }}
+                        </span>
+                      </button>
+                      <button
+                        (click)="deleteMap(m._id); $event.stopPropagation()"
+                        style="color: #F43F5E; font-size: 11px; opacity: 0.5; cursor: pointer; background: none; border: none; padding: 4px;"
+                        class="hover:opacity-100"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
           <div class="relative">
             <button
               (click)="togglePopup('actions')"
@@ -789,71 +888,9 @@ type PopupType =
             }
           </div>
         </div>
-
-        <!-- ═══ METRICS ═══ -->
-        @if (metrics) {
-          <div
-            class="flex items-center gap-6 animate-fade-in"
-            [style.background]="isDark ? 'rgba(74,61,50,0.45)' : 'rgba(245,239,231,0.6)'"
-            [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
-            style="padding: 8px 20px; border-radius: 16px;"
-          >
-            <div class="text-center" style="min-width: 48px;">
-              <div
-                [class]="
-                  isDark
-                    ? 'text-sm font-semibold text-stone-200 tabular-nums'
-                    : 'text-sm font-semibold text-stone-800 tabular-nums'
-                "
-              >
-                {{ metrics.expandedCount }}
-              </div>
-              <div
-                [style.color]="isDark ? '#8B7A6B' : '#A89888'"
-                style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px;"
-              >
-                {{ i18n.t('toolbar.nodes') }}
-              </div>
-            </div>
-            <div
-              [style.background]="isDark ? '#4A3D32' : '#D7CABC'"
-              style="width: 1px; height: 24px;"
-            ></div>
-            <div class="text-center" style="min-width: 48px;">
-              <div
-                [class]="
-                  isDark
-                    ? 'text-sm font-semibold text-stone-200 tabular-nums'
-                    : 'text-sm font-semibold text-stone-800 tabular-nums'
-                "
-              >
-                {{ metrics.cost === Infinity ? '—' : (metrics.cost | number: '1.1-1') }}
-              </div>
-              <div
-                [style.color]="isDark ? '#8B7A6B' : '#A89888'"
-                style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px;"
-              >
-                {{ i18n.t('toolbar.cost') }}
-              </div>
-            </div>
-            <div
-              [class]="metrics.path ? 'text-emerald-400' : 'text-rose-400'"
-              style="font-size: 14px;"
-            >
-              {{ metrics.path ? '●' : '○' }}
-            </div>
-            <button
-              (click)="onExportJSON()"
-              [style.color]="isDark ? '#8B7A6B' : '#A89888'"
-              class="text-xs hover:opacity-70 transition-all cursor-pointer"
-              style="padding: 4px 8px;"
-            >
-              {{ i18n.t('toolbar.export') }}
-            </button>
-          </div>
-        }
       </div>
     </div>
+
     @if (activePopup) {
       <div class="fixed inset-0 z-10" (click)="activePopup = null"></div>
     }
@@ -869,6 +906,7 @@ export class ToolbarComponent implements OnDestroy {
   swarmWeight = 2;
   activeTool: EditorTool = EditorTool.WALL;
   weightValue = 3;
+
   speed = 50;
   vizState: VisualizationState = VisualizationState.IDLE;
   currentStep = 0;
@@ -882,11 +920,20 @@ export class ToolbarComponent implements OnDestroy {
   loadingAi = false;
   aiError = '';
   recommendation: any = null;
+  keyMoments: { stepIndex: number; explanation: string }[] = [];
 
   // Generators
   genDensity = 30;
   genSeed = Math.floor(Math.random() * 1000000);
   lastGeneratorShort = '';
+
+  // Save/Load Map
+  isLoggedIn = false;
+  savedMaps: any[] = [];
+
+  // AI Contextual Help
+  contextualExplanation = '';
+  contextualLoading = false;
 
   private subs: Subscription[] = [];
 
@@ -958,11 +1005,13 @@ export class ToolbarComponent implements OnDestroy {
   }
 
   constructor(
-    private gridService: GridService,
+    public gridService: GridService,
     private vizService: VisualizationService,
     private themeService: ThemeService,
     private exportService: ExportService,
     private aiService: AIService,
+    private apiService: ApiService,
+    private authService: AuthService,
     public i18n: TranslationService,
   ) {
     this.subs.push(
@@ -971,6 +1020,9 @@ export class ToolbarComponent implements OnDestroy {
       this.vizService.totalSteps$.subscribe((t) => (this.totalSteps = t)),
       this.vizService.metrics$.subscribe((m) => (this.metrics = m)),
       this.themeService.theme$.subscribe((t) => (this.isDark = t === 'dark')),
+      this.authService.user$.subscribe((u) => (this.isLoggedIn = !!u)),
+      this.gridService.activeTool$.subscribe((t) => (this.activeTool = t)),
+      this.gridService.weightValue$.subscribe((v) => (this.weightValue = v)),
       this.i18n.lang$.subscribe(() => {
         this.toolsList = [
           {
@@ -1029,6 +1081,9 @@ export class ToolbarComponent implements OnDestroy {
 
   togglePopup(popup: PopupType): void {
     this.activePopup = this.activePopup === popup ? null : popup;
+    if (popup === 'loadmap' && this.activePopup === 'loadmap') {
+      this.loadSavedMaps();
+    }
   }
 
   getAlgoShortName(): string {
@@ -1052,8 +1107,12 @@ export class ToolbarComponent implements OnDestroy {
   }
 
   selectTool(tool: EditorTool): void {
-    this.activeTool = tool;
+    this.gridService.activeTool$.next(tool);
     if (tool !== EditorTool.WEIGHT) this.activePopup = null;
+  }
+
+  onWeightChange(value: number): void {
+    this.gridService.weightValue$.next(value);
   }
 
   needsHeuristic(): boolean {
@@ -1131,7 +1190,10 @@ export class ToolbarComponent implements OnDestroy {
   applyGenerator(type: GeneratorType): void {
     this.vizService.reset();
     this.lastGeneratorShort = GENERATOR_INFO[type].short;
-    const grid = generateMap(type, 25, 50, { density: this.genDensity, seed: this.genSeed });
+    const currentGrid = this.gridService.getGrid();
+    const rows = currentGrid?.rows || 25;
+    const cols = currentGrid?.cols || 50;
+    const grid = generateMap(type, rows, cols, { density: this.genDensity, seed: this.genSeed });
     this.gridService.createGrid(grid.rows, grid.cols);
     const current = this.gridService.getGrid()!;
     for (let r = 0; r < grid.rows; r++) {
@@ -1156,7 +1218,8 @@ export class ToolbarComponent implements OnDestroy {
     this.loadingAi = true;
     this.aiError = '';
     this.aiService.getKeyMoments(this.selectedAlgorithm, grid, metrics, []).subscribe({
-      next: () => {
+      next: (res) => {
+        this.keyMoments = res.keyMoments || [];
         this.loadingAi = false;
       },
       error: () => {
@@ -1229,6 +1292,22 @@ export class ToolbarComponent implements OnDestroy {
         }
       }
     }
+    if (data.start) {
+      const [r, c] = data.start;
+      if (r >= 0 && r < rows && c >= 0 && c < cols) {
+        grid.cells[grid.start.row][grid.start.col].type = CellType.EMPTY;
+        grid.start = { row: r, col: c };
+        grid.cells[r][c].type = CellType.START;
+      }
+    }
+    if (data.goal) {
+      const [r, c] = data.goal;
+      if (r >= 0 && r < rows && c >= 0 && c < cols) {
+        grid.cells[grid.goal.row][grid.goal.col].type = CellType.EMPTY;
+        grid.goal = { row: r, col: c };
+        grid.cells[r][c].type = CellType.GOAL;
+      }
+    }
     this.gridService['grid$'].next(grid);
   }
 
@@ -1245,14 +1324,182 @@ export class ToolbarComponent implements OnDestroy {
       pathCost: this.metrics.cost === Infinity ? null : this.metrics.cost,
       pathLength: this.metrics.path?.length ?? null,
       totalSteps: this.metrics.totalSteps,
-      executionTimeMs: 0,
+      executionTimeMs: this.vizService.executionTimeMs$.value,
       foundPath: !!this.metrics.path,
       mapRows: grid?.rows ?? 0,
       mapCols: grid?.cols ?? 0,
-      wallCount: 0,
-      weightedCount: 0,
+      wallCount: this.countCells(grid, 'wall'),
+      weightedCount: this.countCells(grid, 'weighted'),
       timestamp: new Date().toISOString(),
     });
     this.exportService.exportJSON();
+  }
+
+  onExportCSV(): void {
+    if (!this.metrics) return;
+    const grid = this.gridService.getGrid();
+    this.exportService.addRun({
+      algorithm: this.selectedAlgorithm,
+      heuristic: this.selectedHeuristic,
+      neighborMode: this.neighborMode,
+      swarmWeight: this.swarmWeight,
+      expandedNodes: this.metrics.expandedCount,
+      maxFrontierSize: this.metrics.maxFrontierSize,
+      pathCost: this.metrics.cost === Infinity ? null : this.metrics.cost,
+      pathLength: this.metrics.path?.length ?? null,
+      totalSteps: this.metrics.totalSteps,
+      executionTimeMs: this.vizService.executionTimeMs$.value,
+      foundPath: !!this.metrics.path,
+      mapRows: grid?.rows ?? 0,
+      mapCols: grid?.cols ?? 0,
+      wallCount: this.countCells(grid, 'wall'),
+      weightedCount: this.countCells(grid, 'weighted'),
+      timestamp: new Date().toISOString(),
+    });
+    this.exportService.exportCSV();
+  }
+
+  private countCells(grid: any, type: 'wall' | 'weighted'): number {
+    if (!grid) return 0;
+    let count = 0;
+    for (let r = 0; r < grid.rows; r++)
+      for (let c = 0; c < grid.cols; c++) {
+        if (type === 'wall' && grid.cells[r][c].type === CellType.WALL) count++;
+        if (type === 'weighted' && grid.cells[r][c].weight > 1) count++;
+      }
+    return count;
+  }
+
+  // ============================================================
+  // POST-EDIT RE-SOLVE
+  // ============================================================
+
+  onPostEditResolve(): void {
+    const grid = this.gridService.getGrid();
+    if (!grid) return;
+    this.vizService.postEditResolve(grid, grid.start, grid.goal, this.getOptions());
+  }
+
+  // ============================================================
+  // SAVE / LOAD MAP
+  // ============================================================
+
+  onSaveMap(): void {
+    const grid = this.gridService.getGrid();
+    if (!grid) return;
+
+    const name = prompt(this.i18n.t('toolbar.mapNamePlaceholder')) || 'Untitled';
+    const walls: [number, number][] = [];
+    const weights: { pos: [number, number]; weight: number }[] = [];
+
+    for (let r = 0; r < grid.rows; r++) {
+      for (let c = 0; c < grid.cols; c++) {
+        const cell = grid.cells[r][c];
+        if (cell.type === CellType.WALL) walls.push([r, c]);
+        if (cell.type === CellType.WEIGHT) weights.push({ pos: [r, c], weight: cell.weight });
+      }
+    }
+
+    this.apiService.saveMap({
+      name,
+      rows: grid.rows,
+      cols: grid.cols,
+      gridData: {
+        walls,
+        weights,
+        start: [grid.start.row, grid.start.col],
+        goal: [grid.goal.row, grid.goal.col],
+      },
+      isPublic: false,
+    }).subscribe({
+      next: () => { this.loadSavedMaps(); },
+      error: () => {},
+    });
+  }
+
+  loadSavedMaps(): void {
+    this.apiService.getMaps().subscribe({
+      next: (maps) => { this.savedMaps = maps; },
+      error: () => {},
+    });
+  }
+
+  loadMap(m: any): void {
+    this.apiService.getMap(m._id).subscribe({
+      next: (map) => {
+        this.vizService.reset();
+        this.gridService.createGrid(map.rows, map.cols);
+        const grid = this.gridService.getGrid()!;
+
+        if (map.gridData?.walls) {
+          for (const [r, c] of map.gridData.walls) {
+            if (r >= 0 && r < map.rows && c >= 0 && c < map.cols) {
+              grid.cells[r][c].type = CellType.WALL;
+            }
+          }
+        }
+        if (map.gridData?.weights) {
+          for (const w of map.gridData.weights) {
+            const [r, c] = w.pos;
+            if (r >= 0 && r < map.rows && c >= 0 && c < map.cols && grid.cells[r][c].type === CellType.EMPTY) {
+              grid.cells[r][c].type = CellType.WEIGHT;
+              grid.cells[r][c].weight = w.weight;
+            }
+          }
+        }
+        if (map.gridData?.start) {
+          const [sr, sc] = map.gridData.start;
+          if (sr >= 0 && sr < map.rows && sc >= 0 && sc < map.cols) {
+            grid.cells[grid.start.row][grid.start.col].type = CellType.EMPTY;
+            grid.start = { row: sr, col: sc };
+            grid.cells[sr][sc].type = CellType.START;
+          }
+        }
+        if (map.gridData?.goal) {
+          const [gr, gc] = map.gridData.goal;
+          if (gr >= 0 && gr < map.rows && gc >= 0 && gc < map.cols) {
+            grid.cells[grid.goal.row][grid.goal.col].type = CellType.EMPTY;
+            grid.goal = { row: gr, col: gc };
+            grid.cells[gr][gc].type = CellType.GOAL;
+          }
+        }
+
+        this.gridService['grid$'].next(grid);
+        this.activePopup = null;
+      },
+      error: () => {},
+    });
+  }
+
+  deleteMap(id: string): void {
+    this.apiService.deleteMap(id).subscribe({
+      next: () => { this.loadSavedMaps(); },
+      error: () => {},
+    });
+  }
+
+  // ============================================================
+  // AI CONTEXTUAL HELP
+  // ============================================================
+
+  onExplainMetric(metricName: string, metricValue: string): void {
+    const algo = this.getAlgoShortName();
+    const context = `Algorithm: ${algo}, Metric: ${metricName} = ${metricValue}`;
+    const question = `What does ${metricName} = ${metricValue} mean for ${algo}?`;
+    this.contextualLoading = true;
+    this.aiService.explain(context, question).subscribe({
+      next: (res) => {
+        this.contextualExplanation = res.explanation;
+        this.contextualLoading = false;
+      },
+      error: () => {
+        this.contextualExplanation = '';
+        this.contextualLoading = false;
+      },
+    });
+  }
+
+  dismissExplanation(): void {
+    this.contextualExplanation = '';
   }
 }

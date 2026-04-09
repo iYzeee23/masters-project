@@ -3,10 +3,21 @@ import { BehaviorSubject } from 'rxjs';
 import { Grid, Cell, CellType, Position } from '@shared/types';
 import { posKey } from '../algorithms/helpers';
 
+export enum EditorTool {
+  WALL = 'wall',
+  WEIGHT = 'weight',
+  START = 'start',
+  GOAL = 'goal',
+  ERASE = 'erase',
+}
+
 @Injectable({ providedIn: 'root' })
 export class GridService {
   private grid: Grid | null = null;
   readonly grid$ = new BehaviorSubject<Grid | null>(null);
+
+  readonly activeTool$ = new BehaviorSubject<EditorTool>(EditorTool.WALL);
+  readonly weightValue$ = new BehaviorSubject<number>(3);
 
   /**
    * Create a new empty grid with given dimensions.
@@ -42,6 +53,14 @@ export class GridService {
   }
 
   /**
+   * Replace the entire grid with an externally-created one.
+   */
+  setGrid(grid: Grid): void {
+    this.grid = grid;
+    this.grid$.next(grid);
+  }
+
+  /**
    * Set a cell type at a given position.
    */
   setCell(pos: Position, type: CellType, weight = 1): void {
@@ -51,15 +70,10 @@ export class GridService {
 
     const cell = this.grid.cells[row][col];
 
-    // Don't overwrite start/goal unless explicitly setting them
-    if (cell.type === CellType.START && type !== CellType.START) {
-      // Move start
-      cell.type = CellType.EMPTY;
-      cell.weight = 1;
-    }
-    if (cell.type === CellType.GOAL && type !== CellType.GOAL) {
-      cell.type = CellType.EMPTY;
-      cell.weight = 1;
+    // Refuse to overwrite start/goal with wall/weight/erase — only allow relocating via START/GOAL type
+    if ((cell.type === CellType.START || cell.type === CellType.GOAL) &&
+        type !== CellType.START && type !== CellType.GOAL) {
+      return;
     }
 
     if (type === CellType.START) {

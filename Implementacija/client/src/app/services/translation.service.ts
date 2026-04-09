@@ -147,6 +147,42 @@ const SR: Translations = {
   'helper.back': '← Nazad',
   'helper.next': 'Dalje →',
   'helper.finish': 'Završi',
+
+  // Dynamic modes
+  'toolbar.reResolve': '↻ Ponovo reši',
+
+  // Legend
+  'legend.title': 'Legenda',
+  'legend.open': 'Otvoreni',
+  'legend.closed': 'Zatvoreni',
+  'legend.current': 'Trenutni',
+  'legend.path': 'Put',
+  'legend.wall': 'Zid',
+  'legend.start': 'Start',
+  'legend.goal': 'Cilj',
+  'legend.metrics': 'Metrike',
+  'legend.found': 'Put',
+  'legend.length': 'Dužina',
+  'legend.time': 'Vreme',
+
+  'toolbar.saveMap': '💾 Sačuvaj mapu',
+  'toolbar.loadMap': '📂 Učitaj mapu',
+  'toolbar.mapSaved': 'Mapa sačuvana!',
+  'toolbar.mapName': 'Naziv mape',
+  'toolbar.mapNamePlaceholder': 'Moja mapa...',
+  'toolbar.makePublic': 'Javna mapa',
+  'toolbar.save': 'Sačuvaj',
+  'toolbar.cancel': 'Otkaži',
+  'toolbar.myMaps': 'Moje mape',
+  'toolbar.publicMaps': 'Javne mape',
+  'toolbar.noMaps': 'Nema sačuvanih mapa',
+  'toolbar.delete': 'Obriši',
+  'compare.insight': '✦ AI Uvid',
+  'compare.insightLoading': 'Analiziram rezultate...',
+  'compare.algos': 'Algoritmi',
+  'compare.bestNodes': 'Najbolji čvorovi',
+  'compare.bestCost': 'Najbolja cena',
+  'compare.bestTime': 'Najbolje vreme',
 };
 
 const EN: Translations = {
@@ -289,6 +325,42 @@ const EN: Translations = {
   'helper.back': '← Back',
   'helper.next': 'Next →',
   'helper.finish': 'Finish',
+
+  // Dynamic modes
+  'toolbar.reResolve': '↻ Re-solve',
+
+  // Legend
+  'legend.title': 'Legend',
+  'legend.open': 'Open',
+  'legend.closed': 'Closed',
+  'legend.current': 'Current',
+  'legend.path': 'Path',
+  'legend.wall': 'Wall',
+  'legend.start': 'Start',
+  'legend.goal': 'Goal',
+  'legend.metrics': 'Metrics',
+  'legend.found': 'Path',
+  'legend.length': 'Length',
+  'legend.time': 'Time',
+
+  'toolbar.saveMap': '💾 Save Map',
+  'toolbar.loadMap': '📂 Load Map',
+  'toolbar.mapSaved': 'Map saved!',
+  'toolbar.mapName': 'Map name',
+  'toolbar.mapNamePlaceholder': 'My map...',
+  'toolbar.makePublic': 'Public map',
+  'toolbar.save': 'Save',
+  'toolbar.cancel': 'Cancel',
+  'toolbar.myMaps': 'My Maps',
+  'toolbar.publicMaps': 'Public Maps',
+  'toolbar.noMaps': 'No saved maps',
+  'toolbar.delete': 'Delete',
+  'compare.insight': '✦ AI Insight',
+  'compare.insightLoading': 'Analyzing results...',
+  'compare.algos': 'Algorithms',
+  'compare.bestNodes': 'Best nodes',
+  'compare.bestCost': 'Best cost',
+  'compare.bestTime': 'Best time',
 };
 
 const TRANSLATIONS: Record<Language, Translations> = { sr: SR, en: EN };
