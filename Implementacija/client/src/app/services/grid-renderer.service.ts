@@ -3,7 +3,7 @@ import {
   Grid, Position, CellType, AlgorithmEvent, EventType,
 } from '@shared/types';
 import { posKey } from '../algorithms/helpers';
-import { ThemeService, ThemeColors } from './theme.service';
+import { ThemeService, ThemeColors, ALGO_COLORS, lightenColor, darkenColor, blendColors } from './theme.service';
 
 export interface RenderState {
   openSet: Set<string>;
@@ -304,5 +304,161 @@ export class GridRendererService {
 
   getRenderState(): RenderState {
     return this.renderState;
+  }
+
+  // ============================================================
+  // COMPARE RACE MODE
+  // ============================================================
+
+  /** Which algorithms "own" each cell. Key = posKey, Value = set of algo keys */
+  private compareCellOwners = new Map<string, Set<string>>();
+  /** Final paths per algorithm. Key = algo key, Value = set of posKeys */
+  private comparePaths = new Map<string, Set<string>>();
+  /** Which algorithms are currently visible */
+  private compareVisibleAlgos = new Set<string>();
+  private compareMode = false;
+
+  enterCompareMode(algoKeys: string[]): void {
+    this.compareMode = true;
+    this.compareCellOwners.clear();
+    this.comparePaths.clear();
+    this.compareVisibleAlgos = new Set(algoKeys);
+  }
+
+  exitCompareMode(): void {
+    this.compareMode = false;
+    this.compareCellOwners.clear();
+    this.comparePaths.clear();
+    this.compareVisibleAlgos.clear();
+    this.render();
+  }
+
+  /** Mark a cell as explored by an algorithm */
+  compareAddCell(algoKey: string, pos: Position): void {
+    const k = posKey(pos);
+    let owners = this.compareCellOwners.get(k);
+    if (!owners) {
+      owners = new Set();
+      this.compareCellOwners.set(k, owners);
+    }
+    owners.add(algoKey);
+  }
+
+  /** Set the final path for an algorithm */
+  compareSetPath(algoKey: string, path: Position[]): void {
+    this.comparePaths.set(algoKey, new Set(path.map(posKey)));
+  }
+
+  /** Toggle visibility of an algorithm */
+  compareToggleAlgo(algoKey: string): void {
+    if (this.compareVisibleAlgos.has(algoKey)) {
+      this.compareVisibleAlgos.delete(algoKey);
+    } else {
+      this.compareVisibleAlgos.add(algoKey);
+    }
+  }
+
+  isCompareAlgoVisible(algoKey: string): boolean {
+    return this.compareVisibleAlgos.has(algoKey);
+  }
+
+  /** Render the compare race visualization */
+  renderCompare(): void {
+    if (!this.ctx || !this.grid || !this.canvas) return;
+
+    const ctx = this.ctx;
+    const grid = this.grid;
+    const cw = this.cellW;
+    const ch = this.cellH;
+    const c = this.colors;
+    const isDark = c.background === '#352B22';
+
+    // Clear
+    ctx.fillStyle = c.background;
+    ctx.fillRect(0, 0, grid.cols * cw, grid.rows * ch);
+
+    for (let row = 0; row < grid.rows; row++) {
+      for (let col = 0; col < grid.cols; col++) {
+        const cell = grid.cells[row][col];
+        const key = posKey({ row, col });
+        const x = col * cw;
+        const y = row * ch;
+
+        let color = c.empty;
+
+        if (cell.type === CellType.WALL) {
+          color = c.wall;
+        } else {
+          // Check if any visible algorithm owns this cell
+          const owners = this.compareCellOwners.get(key);
+          if (owners) {
+            const visibleOwners = [...owners].filter(a => this.compareVisibleAlgos.has(a));
+            if (visibleOwners.length > 0) {
+              // Get territory colors (lightened base)
+              const territoryColors = visibleOwners.map(a => {
+                const base = ALGO_COLORS[a] || '#888888';
+                return isDark ? lightenColor(base, 0.15) : lightenColor(base, 0.45);
+              });
+              color = blendColors(territoryColors);
+
+              // Check if any visible algo has this cell in its path
+              const pathOwners = visibleOwners.filter(a => this.comparePaths.get(a)?.has(key));
+              if (pathOwners.length > 0) {
+                const pathColors = pathOwners.map(a => {
+                  const base = ALGO_COLORS[a] || '#888888';
+                  return isDark ? base : darkenColor(base, 0.15);
+                });
+                color = blendColors(pathColors);
+              }
+            }
+          }
+        }
+
+        // Draw cell
+        ctx.fillStyle = color;
+        const gap = 1;
+        const r = Math.min(4, Math.min(cw, ch) * 0.15);
+        ctx.beginPath();
+        ctx.roundRect(x + gap, y + gap, cw - gap * 2, ch - gap * 2, r);
+        ctx.fill();
+
+        // Draw weight vignette
+        if (cell.weight > 1 && cell.type !== CellType.WALL) {
+          const cx = x + cw / 2;
+          const cy = y + ch / 2;
+          const innerR = Math.min(cw, ch) * 0.12;
+          const outerR = Math.max(cw, ch) * 0.65;
+          const intensity = Math.min(0.5, 0.06 + (cell.weight - 1) * 0.05);
+          const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+          grad.addColorStop(0, `rgba(120,90,60,${intensity})`);
+          grad.addColorStop(1, `rgba(120,90,60,0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(x + gap, y + gap, cw - gap * 2, ch - gap * 2, r);
+          ctx.fill();
+
+          const fontSize = Math.max(10, Math.min(cw, ch) * 0.38);
+          ctx.font = `bold ${fontSize}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const displayW = this.binaryWeightMode ? '1' : String(cell.weight);
+          ctx.fillStyle = isDark ? '#FFFFFF' : '#3D2E22';
+          ctx.fillText(displayW, cx, cy);
+        }
+      }
+    }
+
+    // Draw start/goal icons
+    this.drawIcon(grid.start, '▶', c.start);
+    this.drawIcon(grid.goal, '★', c.goal);
+  }
+
+  /** Public: trigger the right render based on mode */
+  renderAuto(): void {
+    if (this.compareMode) {
+      this.renderCompare();
+    } else {
+      this.render();
+    }
   }
 }

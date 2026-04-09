@@ -101,3 +101,57 @@ export class ThemeService {
     this.setTheme(this.currentTheme === 'dark' ? 'light' : 'dark');
   }
 }
+
+// ============================================================
+// ALGORITHM RACE COLORS (for Compare tab)
+// ============================================================
+
+export const ALGO_COLORS: Record<string, string> = {
+  bfs:               '#3B82F6', // blue
+  dfs:               '#EF4444', // red
+  dijkstra:          '#22C55E', // green
+  a_star:            '#8B5CF6', // purple
+  greedy:            '#F97316', // orange
+  swarm:             '#06B6D4', // cyan
+  convergent_swarm:  '#EC4899', // pink
+  zero_one_bfs:      '#EAB308', // yellow
+};
+
+/** Darken a hex color by mixing with black (factor 0-1, 0=same, 1=black) */
+export function darkenColor(hex: string, factor = 0.35): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const dr = Math.round(r * (1 - factor));
+  const dg = Math.round(g * (1 - factor));
+  const db = Math.round(b * (1 - factor));
+  return `#${dr.toString(16).padStart(2, '0')}${dg.toString(16).padStart(2, '0')}${db.toString(16).padStart(2, '0')}`;
+}
+
+/** Lighten a hex color by mixing with white (factor 0-1, 0=same, 1=white) */
+export function lightenColor(hex: string, factor = 0.5): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const lr = Math.round(r + (255 - r) * factor);
+  const lg = Math.round(g + (255 - g) * factor);
+  const lb = Math.round(b + (255 - b) * factor);
+  return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+}
+
+/** Blend multiple hex colors by averaging RGB channels */
+export function blendColors(hexColors: string[]): string {
+  if (hexColors.length === 0) return '#888888';
+  if (hexColors.length === 1) return hexColors[0];
+  let tr = 0, tg = 0, tb = 0;
+  for (const hex of hexColors) {
+    tr += parseInt(hex.slice(1, 3), 16);
+    tg += parseInt(hex.slice(3, 5), 16);
+    tb += parseInt(hex.slice(5, 7), 16);
+  }
+  const n = hexColors.length;
+  const ar = Math.round(tr / n);
+  const ag = Math.round(tg / n);
+  const ab = Math.round(tb / n);
+  return `#${ar.toString(16).padStart(2, '0')}${ag.toString(16).padStart(2, '0')}${ab.toString(16).padStart(2, '0')}`;
+}

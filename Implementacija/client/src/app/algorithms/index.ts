@@ -81,6 +81,30 @@ export function runAlgorithm(
 }
 
 /**
+ * Run algorithm to completion WITHOUT collecting trace (much faster for Compare).
+ * Returns only result and execution time.
+ */
+export function runAlgorithmFast(
+  grid: Grid,
+  start: Position,
+  goal: Position,
+  options: AlgorithmOptions,
+) {
+  const startTime = performance.now();
+  const algo = createAlgorithm(grid, start, goal, options);
+
+  while (!algo.isDone()) {
+    algo.step();
+  }
+
+  const endTime = performance.now();
+  return {
+    result: algo.getResult(),
+    executionTimeMs: endTime - startTime,
+  };
+}
+
+/**
  * Algorithm metadata for UI display.
  */
 export const ALGORITHM_INFO: Record<AlgorithmType, {

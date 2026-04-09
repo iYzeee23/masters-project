@@ -96,6 +96,7 @@ const SR: Translations = {
 
   // Compare
   'compare.run': '▶ Pokreni poređenje',
+  'compare.table': 'Tabela rezultata',
   'compare.running': '⏳ ...',
   'compare.selectAll': 'Izaberi sve',
   'compare.algorithm': 'Algoritam',
@@ -294,6 +295,7 @@ const EN: Translations = {
 
   // Compare
   'compare.run': '▶ Run Comparison',
+  'compare.table': 'Results table',
   'compare.running': '⏳ ...',
   'compare.selectAll': 'Select All',
   'compare.algorithm': 'Algorithm',

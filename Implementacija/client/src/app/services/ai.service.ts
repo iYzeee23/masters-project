@@ -142,10 +142,11 @@ export class AIService {
   /**
    * AI Compare Insight — summarize comparison results.
    */
-  getCompareInsight(results: object[], grid: Grid): Observable<{ insight: string }> {
-    return this.http.post<{ insight: string }>(`${this.API}/compare-insight`, {
+  getCompareInsight(results: object[], grid: Grid): Observable<{ insight: any }> {
+    return this.http.post<{ insight: any }>(`${this.API}/compare-insight`, {
       results,
       mapSummary: this.summarizeGrid(grid),
-    }, { headers: this.headers }).pipe(timeout(30000));
+      language: this.i18n.getLanguage(),
+    }, { headers: this.headers }).pipe(timeout(60000));
   }
 }

@@ -54,6 +54,7 @@ const explainSchema = z.object({
 const compareInsightSchema = z.object({
   results: z.array(z.unknown()).min(1),
   mapSummary: z.record(z.string(), z.unknown()),
+  language: z.enum(['sr', 'en']).optional(),
 });
 
 // POST /api/ai/tutor — Key moments from trace
@@ -452,9 +453,9 @@ router.post('/compare-insight', authMiddleware, async (req: AuthRequest, res: Re
       res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
       return;
     }
-    const { results, mapSummary } = parsed.data;
+    const { results, mapSummary, language: ciLang = 'en' } = parsed.data;
 
-    const prompt = `You are a computer science professor analyzing the results of a pathfinding algorithm comparison experiment.
+    const basePrompt = `You are a computer science professor analyzing the results of a pathfinding algorithm comparison experiment.
 
 A student ran multiple algorithms on the same map and got these results. Write an insightful educational analysis.
 
@@ -465,18 +466,26 @@ ${JSON.stringify(results, null, 2)}
 
 WRITE YOUR ANALYSIS (4-6 sentences) covering:
 1. **The winner and why**: Which algorithm found the best path with fewest expanded nodes? Explain how the map properties (density, weights, layout) favored this algorithm.
-2. **Optimal vs. fast**: If some algorithms found cheaper paths but expanded more nodes, explain the trade-off. If Greedy/DFS found a path fast but with higher cost, explain why.
-3. **Surprising results**: Did any algorithm perform unexpectedly well or poorly? For example: DFS found a short path by luck, or A* expanded almost as many nodes as BFS (which means the heuristic wasn't very helpful on this map).
-4. **Key takeaway**: One sentence the student should remember — what does this comparison teach about choosing algorithms?
+2. **Optimal vs. fast**: If some algorithms found cheaper paths but expanded more nodes, explain the trade-off.
+3. **Surprising results**: Did any algorithm perform unexpectedly well or poorly?
+4. **Key takeaway**: One sentence the student should remember.
 
-Be specific: reference actual numbers from the results (e.g., "A* expanded only 234 nodes compared to BFS's 891, while finding the same optimal path cost of 47.0").
+Be specific: reference actual numbers from the results.`;
 
-Respond ONLY with valid JSON: { "insight": string }`;
+    const langSr = 'IMPORTANT: Write ALL text in Serbian (Latin script).';
+    const langEn = 'Write in English.';
 
-    const result = await callAI(prompt);
-    let aiResponse;
-    try { aiResponse = JSON.parse(result); } catch { res.status(502).json({ error: 'AI returned invalid JSON' }); return; }
-    res.json(aiResponse);
+    const [primaryResult, altResult] = await Promise.all([
+      callAI(`${basePrompt}\n${ciLang === 'sr' ? langSr : langEn}\n\nRespond ONLY with valid JSON: { "insight": string }`, { maxTokens: 600 }),
+      callAI(`${basePrompt}\n${ciLang === 'sr' ? langEn : langSr}\n\nRespond ONLY with valid JSON: { "insight": string }`, { maxTokens: 600 }),
+    ]);
+
+    let primary = '', alt = '';
+    try { primary = JSON.parse(primaryResult).insight || ''; } catch { /* empty */ }
+    try { alt = JSON.parse(altResult).insight || ''; } catch { /* empty */ }
+
+    const altLang = ciLang === 'sr' ? 'en' : 'sr';
+    res.json({ insight: { [ciLang]: primary, [altLang]: alt } });
   } catch (err) {
     console.error('[AI compare-insight]', err);
     res.status(500).json({ error: 'AI request failed' });
