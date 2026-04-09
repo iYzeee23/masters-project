@@ -18,8 +18,10 @@ export interface RenderState {
 export class GridRendererService {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  private cellSize = 28;
+  private cellW = 28;
+  private cellH = 28;
   private grid: Grid | null = null;
+  binaryWeightMode = false;
   private renderState: RenderState = {
     openSet: new Set(),
     closedSet: new Set(),
@@ -56,10 +58,10 @@ export class GridRendererService {
 
     if (this.canvas && this.ctx) {
       const dpr = window.devicePixelRatio || 1;
-      this.canvas.width = grid.cols * this.cellSize * dpr;
-      this.canvas.height = grid.rows * this.cellSize * dpr;
-      this.canvas.style.width = grid.cols * this.cellSize + 'px';
-      this.canvas.style.height = grid.rows * this.cellSize + 'px';
+      this.canvas.width = grid.cols * this.cellW * dpr;
+      this.canvas.height = grid.rows * this.cellH * dpr;
+      this.canvas.style.width = grid.cols * this.cellW + 'px';
+      this.canvas.style.height = grid.rows * this.cellH + 'px';
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
@@ -67,7 +69,16 @@ export class GridRendererService {
   }
 
   setCellSize(size: number): void {
-    this.cellSize = size;
+    this.cellW = size;
+    this.cellH = size;
+    if (this.grid) {
+      this.setGrid(this.grid);
+    }
+  }
+
+  setCellDimensions(w: number, h: number): void {
+    this.cellW = w;
+    this.cellH = h;
     if (this.grid) {
       this.setGrid(this.grid);
     }
@@ -157,8 +168,8 @@ export class GridRendererService {
    */
   pixelToGrid(x: number, y: number): Position | null {
     if (!this.grid) return null;
-    const col = Math.floor(x / this.cellSize);
-    const row = Math.floor(y / this.cellSize);
+    const col = Math.floor(x / this.cellW);
+    const row = Math.floor(y / this.cellH);
     if (row < 0 || row >= this.grid.rows || col < 0 || col >= this.grid.cols) return null;
     return { row, col };
   }
@@ -171,12 +182,13 @@ export class GridRendererService {
 
     const ctx = this.ctx;
     const grid = this.grid;
-    const size = this.cellSize;
+    const cw = this.cellW;
+    const ch = this.cellH;
     const c = this.colors;
 
-    // Clear (use logical dimensions, not canvas pixel dimensions)
-    const logicalWidth = grid.cols * size;
-    const logicalHeight = grid.rows * size;
+    // Clear
+    const logicalWidth = grid.cols * cw;
+    const logicalHeight = grid.rows * ch;
     ctx.fillStyle = c.background;
     ctx.fillRect(0, 0, logicalWidth, logicalHeight);
 
@@ -185,17 +197,14 @@ export class GridRendererService {
       for (let col = 0; col < grid.cols; col++) {
         const cell = grid.cells[row][col];
         const key = posKey({ row, col });
-        const x = col * size;
-        const y = row * size;
+        const x = col * cw;
+        const y = row * ch;
 
         // Determine cell color (priority order)
         let color = c.empty;
 
         if (cell.type === CellType.WALL) {
           color = c.wall;
-        } else if (cell.weight > 1) {
-          color = cell.weight <= 3 ? c.weightLow :
-                  cell.weight <= 6 ? c.weightMed : c.weightHigh;
         }
 
         // Visualization overlays
@@ -212,55 +221,86 @@ export class GridRendererService {
           color = c.path;
         }
 
-        // Start and goal always on top
+        // Start and goal: use path color when path is found, otherwise their own color
         if (key === this.renderState.startKey) {
-          color = c.start;
+          color = this.renderState.path.size > 0 ? c.path : c.start;
         }
         if (key === this.renderState.goalKey) {
+          color = this.renderState.path.size > 0 ? c.path : c.goal;
           color = c.goal;
         }
 
         // Draw cell — rounded corners for soft aesthetic
         ctx.fillStyle = color;
         const gap = 1;
-        const r = Math.min(4, size * 0.15); // corner radius
+        const r = Math.min(4, Math.min(cw, ch) * 0.15);
         ctx.beginPath();
-        ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+        ctx.roundRect(x + gap, y + gap, cw - gap * 2, ch - gap * 2, r);
         ctx.fill();
 
-        // Draw weight number if weighted
+        // Draw weight vignette (always, even over visualization overlay)
         if (cell.weight > 1 && cell.type !== CellType.WALL) {
-          ctx.fillStyle = c.text;
-          ctx.font = `${Math.max(10, size * 0.35)}px monospace`;
+          const cx = x + cw / 2;
+          const cy = y + ch / 2;
+          const innerRadius = Math.min(cw, ch) * 0.12;
+          const outerRadius = Math.max(cw, ch) * 0.65;
+          const intensity = Math.min(0.7, 0.08 + (cell.weight - 1) * 0.07);
+          const isDarkTheme = c.background === '#352B22';
+          const tintR = isDarkTheme ? 120 : 180;
+          const tintG = isDarkTheme ? 90 : 150;
+          const tintB = isDarkTheme ? 60 : 110;
+          const grad = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, outerRadius);
+          grad.addColorStop(0, `rgba(${tintR},${tintG},${tintB},${intensity})`);
+          grad.addColorStop(0.5, `rgba(${tintR},${tintG},${tintB},${intensity * 0.25})`);
+          grad.addColorStop(1, `rgba(${tintR},${tintG},${tintB},0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(x + gap, y + gap, cw - gap * 2, ch - gap * 2, r);
+          ctx.fill();
+
+          // Weight number on top — adaptive color based on background
+          const fontSize = Math.max(10, Math.min(cw, ch) * 0.38);
+          ctx.font = `bold ${fontSize}px monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(String(cell.weight), x + size / 2, y + size / 2);
+          // Use white text on dark overlays, dark text on light backgrounds
+          const isDarkBg = color === c.open || color === c.closed || color === c.current || color === c.wall;
+          const isLightBg = color === c.empty || color === c.path;
+          const textColor = isDarkBg ? '#FFFFFF' : isLightBg ? '#3D2E22' : c.text;
+          const displayWeight = this.binaryWeightMode ? '1' : String(cell.weight);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.strokeText(displayWeight, cx, cy);
+          ctx.fillStyle = textColor;
+          ctx.fillText(displayWeight, cx, cy);
         }
       }
     }
 
-    // Draw start/goal icons
-    this.drawIcon(grid.start, '▶', c.start);
-    this.drawIcon(grid.goal, '★', c.goal);
+    // Draw start/goal icons — use path color when path is found
+    const hasPath = this.renderState.path.size > 0;
+    this.drawIcon(grid.start, '▶', hasPath ? c.path : c.start);
+    this.drawIcon(grid.goal, '★', hasPath ? c.path : c.goal);
   }
 
   private drawIcon(pos: Position, icon: string, bgColor: string): void {
     if (!this.ctx) return;
-    const size = this.cellSize;
-    const x = pos.col * size;
-    const y = pos.row * size;
+    const cw = this.cellW;
+    const ch = this.cellH;
+    const x = pos.col * cw;
+    const y = pos.row * ch;
     const gap = 1;
-    const r = Math.min(4, size * 0.15);
+    const r = Math.min(4, Math.min(cw, ch) * 0.15);
 
     this.ctx.fillStyle = bgColor;
     this.ctx.beginPath();
-    this.ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+    this.ctx.roundRect(x + gap, y + gap, cw - gap * 2, ch - gap * 2, r);
     this.ctx.fill();
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = `bold ${Math.max(12, size * 0.45)}px sans-serif`;
+    this.ctx.font = `bold ${Math.max(12, Math.min(cw, ch) * 0.45)}px sans-serif`;
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(icon, x + size / 2, y + size / 2);
+    this.ctx.fillText(icon, x + cw / 2, y + ch / 2);
   }
 
   getRenderState(): RenderState {

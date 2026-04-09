@@ -58,6 +58,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   isDark = true;
 
   private isDrawing = false;
+  private isErasing = false;
   private isDraggingStart = false;
   private isDraggingGoal = false;
   private lastDrawnCell: string | null = null;
@@ -84,15 +85,21 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subs.push(
       this.gridService.grid$.subscribe((grid) => {
         if (grid) {
-          // Auto-size cells to guarantee grid + shadow fits in viewport
-          const headerToolbar = 140; // header + toolbar height
-          const shadowPadding = 100; // shadow + padding on all sides
+          // Calculate reference grid dimensions (as if 25×50) to keep constant screen area
+          const headerToolbar = 140;
+          const shadowPadding = 100;
           const availableWidth = window.innerWidth - shadowPadding;
           const availableHeight = window.innerHeight - headerToolbar - shadowPadding;
-          const cellW = Math.floor(availableWidth / grid.cols);
-          const cellH = Math.floor(availableHeight / grid.rows);
-          const cellSize = Math.max(10, Math.min(28, cellW, cellH));
-          this.renderer.setCellSize(cellSize);
+          const refCellW = Math.floor(availableWidth / 50);
+          const refCellH = Math.floor(availableHeight / 25);
+          const refCellSize = Math.min(refCellW, refCellH);
+          // Reference grid pixel dimensions
+          const refWidth = refCellSize * 50;
+          const refHeight = refCellSize * 25;
+          // Each cell gets independent width and height to fill reference area
+          const cellW = Math.max(4, Math.floor(refWidth / grid.cols));
+          const cellH = Math.max(4, Math.floor(refHeight / grid.rows));
+          this.renderer.setCellDimensions(cellW, cellH);
           this.renderer.setGrid(grid);
         }
       }),
@@ -124,6 +131,13 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const grid = this.gridService.getGrid();
     if (!grid) return;
+
+    // Right-click = erase
+    if (event.button === 2) {
+      this.isErasing = true;
+      this.gridService.setCell(pos, CellType.EMPTY);
+      return;
+    }
 
     const cell = grid.cells[pos.row][pos.col];
 
@@ -163,10 +177,14 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isDrawing) {
       this.applyTool(pos);
     }
+    if (this.isErasing) {
+      this.gridService.setCell(pos, CellType.EMPTY);
+    }
   }
 
   onMouseUp(): void {
     this.isDrawing = false;
+    this.isErasing = false;
     this.isDraggingStart = false;
     this.isDraggingGoal = false;
     this.lastDrawnCell = null;

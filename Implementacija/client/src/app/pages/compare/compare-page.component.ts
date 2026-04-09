@@ -217,8 +217,8 @@ interface CompareResult {
         <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; opacity: 0.3;"></div>
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(91,168,212,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#5BA8D4' : '#4A9AC7'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.open') }}</span></div>
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(155,126,212,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#9B7ED4' : '#7C5FB8'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.closed') }}</span></div>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,184,77,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E8B84D' : '#D4952C'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.current') }}</span></div>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,124,160,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E87CA0' : '#D4688A'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.path') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,124,160,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E87CA0' : '#D4688A'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.current') }}</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 0; border-radius: 10px; background: rgba(232,184,77,0.08); transition: transform 0.2s ease; cursor: default;" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div [style.background]="isDark ? '#E8B84D' : '#D4952C'" style="width: 10px; height: 10px; border-radius: 50%;"></div><span [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'" style="font-size: 13px; font-weight: 500;">{{ i18n.t('legend.path') }}</span></div>
       </div>
 
       <!-- CENTER: Grid -->
@@ -535,10 +535,10 @@ export class ComparePageComponent implements OnInit, OnDestroy {
     const shadowPadding = 100;
     const availableWidth = window.innerWidth - shadowPadding;
     const availableHeight = window.innerHeight - headerToolbar - shadowPadding;
-    const cellW = Math.floor(availableWidth / cols);
-    const cellH = Math.floor(availableHeight / rows);
-    const cellSize = Math.max(10, Math.min(28, cellW, cellH));
-    return rows * cellSize;
+    const refCellW = Math.floor(availableWidth / 50);
+    const refCellH = Math.floor(availableHeight / 25);
+    const refCellSize = Math.min(refCellW, refCellH);
+    return refCellSize * 25;
   }
 
   toggleAlgorithm(algo: AlgorithmType): void {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { GridService } from '../../services/grid.service';
+import { GridRendererService } from '../../services/grid-renderer.service';
 import { VisualizationService } from '../../services/visualization.service';
 import { ThemeService } from '../../services/theme.service';
 import { TranslationService } from '../../services/translation.service';
@@ -213,7 +214,7 @@ type PopupType =
                       "
                       style="flex: 1; padding: 9px 12px; border-radius: 10px; font-size: 12px; cursor: pointer; transition: all 0.2s; border: none;"
                     >
-                      {{ tab.label }} {{ tab.name }}
+                      {{ tab.label }} {{ i18n.t(tab.i18nKey) }}
                     </button>
                   }
                 </div>
@@ -340,53 +341,64 @@ type PopupType =
           [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
           style="padding: 6px 12px; border-radius: 16px;"
         >
+          <!-- Play / Pause toggle -->
+          @if (vizState === 'running') {
+            <button
+              (click)="onPause()"
+              class="text-white rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-[1.04] active:scale-[0.97] cursor-pointer"
+              style="padding: 8px 22px; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1);"
+            >
+              {{ i18n.t('toolbar.pause') }}
+            </button>
+          } @else {
+            <button
+              (click)="onVisualize()"
+              class="text-white rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-[1.04] active:scale-[0.97] cursor-pointer"
+              style="padding: 8px 22px; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1);"
+            >
+              {{ i18n.t('toolbar.play') }}
+            </button>
+          }
+          <!-- Step Back -->
           <button
-            (click)="onVisualize()"
-            [disabled]="vizState === 'running'"
-            class="text-white rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 disabled:opacity-30 hover:scale-[1.04] active:scale-[0.97] cursor-pointer"
-            style="padding: 8px 22px; background: linear-gradient(135deg, #6E473B, #8B5E50); box-shadow: 0 4px 16px rgba(110,71,59,0.3), inset 0 1px 0 rgba(255,255,255,0.1);"
-          >
-            {{ i18n.t('toolbar.play') }}
-          </button>
-          <button
-            (click)="onPause()"
-            [disabled]="vizState !== 'running'"
+            (click)="onStepBack()"
+            [disabled]="vizState === 'running' || vizState === 'idle' || currentStep <= 0"
             [class]="toolbarBtnClass"
-            class="rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+            class="rounded-xl text-sm font-medium transition-all duration-200 disabled:hover:scale-100 cursor-pointer disabled:cursor-default"
             style="padding: 8px 14px;"
           >
-            {{ i18n.t('toolbar.pause') }}
+            {{ i18n.t('toolbar.stepBack') }}
           </button>
+          <!-- Step Forward -->
           <button
             (click)="onStep()"
             [disabled]="vizState === 'running' || vizState === 'finished'"
             [class]="toolbarBtnClass"
-            class="rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+            class="rounded-xl text-sm font-medium transition-all duration-200 disabled:hover:scale-100 cursor-pointer disabled:cursor-default"
             style="padding: 8px 14px;"
           >
             {{ i18n.t('toolbar.step') }}
           </button>
+          <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="width: 1px; height: 20px;"></div>
+          <!-- Skip to Beginning -->
+          <button
+            (click)="onSkipToBeginning()"
+            [disabled]="vizState === 'running' || vizState === 'idle' || currentStep <= 0"
+            [class]="toolbarBtnClass"
+            class="rounded-xl text-sm font-medium transition-all duration-200 disabled:hover:scale-100 cursor-pointer disabled:cursor-default"
+            style="padding: 8px 14px;"
+          >
+            {{ i18n.t('toolbar.begin') }}
+          </button>
+          <!-- Skip to End -->
           <button
             (click)="onSkipToEnd()"
-            [disabled]="vizState === 'finished'"
+            [disabled]="vizState === 'finished' || vizState === 'idle'"
             [class]="toolbarBtnClass"
-            class="rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+            class="rounded-xl text-sm font-medium transition-all duration-200 disabled:hover:scale-100 cursor-pointer disabled:cursor-default"
             style="padding: 8px 14px;"
           >
             {{ i18n.t('toolbar.end') }}
-          </button>
-          <div
-            [style.background]="isDark ? '#4A3D32' : '#D7CABC'"
-            style="width: 1px; height: 20px;"
-          ></div>
-          <button
-            (click)="onPostEditResolve()"
-            [disabled]="vizState !== 'finished'"
-            [class]="toolbarBtnClass"
-            class="rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
-            style="padding: 8px 12px;"
-          >
-            {{ i18n.t('toolbar.reResolve') }}
           </button>
         </div>
 
@@ -460,25 +472,31 @@ type PopupType =
                     [style.border-top]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
                     style="margin-top: 8px; padding: 12px 14px 6px;"
                   >
-                    <div class="flex items-center gap-3">
-                      <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;"
-                        >Weight</span
-                      >
-                      <input
-                        type="range"
-                        [ngModel]="weightValue"
-                        (ngModelChange)="onWeightChange($event)"
-                        [min]="2"
-                        [max]="10"
-                        [step]="1"
-                        class="flex-1 accent-rose-500"
-                      />
-                      <span
-                        [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
-                        style="font-size: 13px; font-weight: 600;"
-                        >{{ weightValue }}</span
-                      >
-                    </div>
+                    @if (selectedAlgorithm === 'zero_one_bfs') {
+                      <div [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 11px; text-align: center;">
+                        0-1 BFS: {{ i18n.t('toolbar.zeroOneHint') }}
+                      </div>
+                    } @else {
+                      <div class="flex items-center gap-3">
+                        <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 12px;"
+                          >{{ i18n.t('toolbar.weightLabel') }}</span
+                        >
+                        <input
+                          type="range"
+                          [ngModel]="weightValue"
+                          (ngModelChange)="onWeightChange($event)"
+                          [min]="2"
+                          [max]="10"
+                          [step]="1"
+                          class="flex-1 accent-rose-500"
+                        />
+                        <span
+                          [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                          style="font-size: 13px; font-weight: 600;"
+                          >{{ weightValue }}</span
+                        >
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -595,6 +613,7 @@ type PopupType =
                 </div>
                 <select
                   [(ngModel)]="selectedHeuristic"
+                  (ngModelChange)="vizService.reset()"
                   [disabled]="!needsHeuristic()"
                   [style.background-color]="isDark ? '#3D3128' : '#F5EFE7'"
                   [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
@@ -618,7 +637,7 @@ type PopupType =
                   </div>
                   <div class="flex gap-2">
                     <button
-                      (click)="neighborMode = 4"
+                      (click)="neighborMode = 4; vizService.reset()"
                       [style.background]="
                         neighborMode === 4
                           ? isDark
@@ -642,7 +661,7 @@ type PopupType =
                       {{ i18n.t('controls.directions4') }}
                     </button>
                     <button
-                      (click)="neighborMode = 8"
+                      (click)="neighborMode = 8; vizService.reset()"
                       [style.background]="
                         neighborMode === 8
                           ? isDark
@@ -687,6 +706,7 @@ type PopupType =
                     <input
                       type="range"
                       [(ngModel)]="swarmWeight"
+                      (ngModelChange)="vizService.reset()"
                       [min]="1.1"
                       [max]="10"
                       [step]="0.1"
@@ -713,7 +733,7 @@ type PopupType =
               class="flex items-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
               style="padding: 8px 16px;"
             >
-              🗺 {{ lastGeneratorShort || i18n.t('toolbar.maps').replace('🗺 ', '') }}
+              {{ i18n.t('toolbar.generate') }}
               <svg
                 style="width:10px;height:10px;opacity:0.35;"
                 fill="currentColor"
@@ -745,7 +765,7 @@ type PopupType =
                     [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
                     style="padding: 10px 14px; font-size: 13px; font-weight: 500; margin-bottom: 2px;"
                   >
-                    {{ gen.name }}
+                    {{ i18n.lang$.value === 'en' ? gen.nameEn : gen.name }}
                   </button>
                 }
                 <div
@@ -774,29 +794,32 @@ type PopupType =
             }
           </div>
           @if (isLoggedIn) {
-            <button
-              (click)="onSaveMap()"
-              [class]="toolbarBtnClass"
-              class="rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
-              style="padding: 8px 12px;"
-            >
-              {{ i18n.t('toolbar.saveMap') }}
-            </button>
             <div class="relative">
               <button
                 (click)="togglePopup('loadmap')"
-                [class]="toolbarBtnClass"
-                class="rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
-                style="padding: 8px 12px;"
+                [class]="activePopup === 'loadmap' ? activeBtnClass : toolbarBtnClass"
+                class="flex items-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+                style="padding: 8px 16px;"
               >
-                {{ i18n.t('toolbar.loadMap') }}
+                {{ i18n.t('toolbar.myMaps') }}
+                <svg style="width:10px;height:10px;opacity:0.35;" fill="currentColor" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" /></svg>
               </button>
               @if (activePopup === 'loadmap') {
                 <div
                   [class]="popupClass"
                   class="absolute top-full right-0 mt-3 w-72 rounded-2xl animate-slide-down z-50"
-                  style="padding: 10px; max-height: 360px; overflow-y: auto;"
+                  style="padding: 10px; max-height: 400px; overflow-y: auto;"
                 >
+                  <!-- Save Map button -->
+                  <button
+                    (click)="onSaveMap()"
+                    [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                    [class]="isDark ? 'hover:bg-[#3D3128]' : 'hover:bg-[#F5EFE7]'"
+                    style="width: 100%; text-align: left; font-size: 13px; font-weight: 500; background: none; border: none; cursor: pointer; border-radius: 10px; padding: 10px 14px; transition: all 0.15s;"
+                  >
+                    {{ i18n.t('toolbar.saveMap') }}
+                  </button>
+                  <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; margin: 6px 0; opacity: 0.4;"></div>
                   <div
                     [style.color]="isDark ? '#8B7A6B' : '#A89888'"
                     style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; padding: 8px 14px 6px;"
@@ -843,7 +866,7 @@ type PopupType =
               class="flex items-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.03] cursor-pointer"
               style="padding: 8px 16px;"
             >
-              Grid
+              {{ i18n.t('toolbar.gridLabel') }}
               <svg
                 style="width:10px;height:10px;opacity:0.35;"
                 fill="currentColor"
@@ -862,7 +885,7 @@ type PopupType =
                   [style.color]="isDark ? '#8B7A6B' : '#A89888'"
                   style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; padding: 8px 14px 6px;"
                 >
-                  Grid
+                  {{ i18n.t('toolbar.gridLabel') }}
                 </div>
                 <button
                   (click)="onReset(); activePopup = null"
@@ -884,6 +907,53 @@ type PopupType =
                 >
                   {{ i18n.t('toolbar.clear') }}
                 </button>
+                <div [style.background]="isDark ? '#4A3D32' : '#D7CABC'" style="height: 1px; margin: 6px 0; opacity: 0.4;"></div>
+                <div
+                  [style.color]="isDark ? '#8B7A6B' : '#A89888'"
+                  style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; padding: 8px 14px 6px;"
+                >
+                  {{ i18n.t('toolbar.gridSize') }}
+                </div>
+                <div style="padding: 6px 14px; display: flex; align-items: center; gap: 8px;">
+                  <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 11px; min-width: 28px;">{{ i18n.t('toolbar.rows') }}</span>
+                  <input type="number" [ngModel]="gridRows" (ngModelChange)="gridRows = +$event" [min]="2" [max]="100" [step]="1"
+                    [style.background]="isDark ? '#352A21' : '#FFF9F2'"
+                    [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                    [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+                    style="width: 60px; padding: 4px 8px; border-radius: 8px; font-size: 13px; outline: none;"
+                  />
+                </div>
+                <div style="padding: 6px 14px; display: flex; align-items: center; gap: 8px;">
+                  <span [style.color]="isDark ? '#8B7A6B' : '#A89888'" style="font-size: 11px; min-width: 28px;">{{ i18n.t('toolbar.cols') }}</span>
+                  <input type="number" [ngModel]="gridCols" (ngModelChange)="gridCols = +$event" [min]="4" [max]="200" [step]="1"
+                    [style.background]="isDark ? '#352A21' : '#FFF9F2'"
+                    [style.color]="isDark ? '#EDE0D0' : '#4A3428'"
+                    [style.border]="isDark ? '1px solid #4A3D32' : '1px solid #D7CABC'"
+                    style="width: 60px; padding: 4px 8px; border-radius: 8px; font-size: 13px; outline: none;"
+                  />
+                </div>
+                <div style="display: flex; gap: 6px; padding: 4px 14px;">
+                  <button
+                    (click)="onResizeGrid(); activePopup = null"
+                    [style.background]="isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.06)'"
+                    [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'"
+                    [style.border]="isDark ? '1px solid rgba(74,61,50,0.5)' : '1px solid rgba(215,202,188,0.8)'"
+                    style="flex: 1; text-align: center; padding: 7px 0; font-size: 11px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                  >
+                    {{ i18n.t('toolbar.applySize') }}
+                  </button>
+                  <button
+                    (click)="gridRows = 25; gridCols = 50; onResizeGrid(); activePopup = null"
+                    [disabled]="gridRows === 25 && gridCols === 50"
+                    [style.background]="isDark ? 'rgba(110,71,59,0.2)' : 'rgba(110,71,59,0.06)'"
+                    [style.color]="isDark ? '#D3C3B0' : '#6E5A4D'"
+                    [style.border]="isDark ? '1px solid rgba(74,61,50,0.5)' : '1px solid rgba(215,202,188,0.8)'"
+                    [style.opacity]="gridRows === 25 && gridCols === 50 ? '0.3' : '1'"
+                    style="flex: 1; text-align: center; padding: 7px 0; font-size: 11px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                  >
+                    {{ i18n.t('toolbar.default') }}
+                  </button>
+                </div>
               </div>
             }
           </div>
@@ -913,6 +983,8 @@ export class ToolbarComponent implements OnDestroy {
   totalSteps = 0;
   metrics: any = null;
   Infinity = Infinity;
+  gridRows = 25;
+  gridCols = 50;
 
   // AI
   activeAiTab: 'tutor' | 'generate' | 'recommend' = 'generate';
@@ -960,18 +1032,18 @@ export class ToolbarComponent implements OnDestroy {
     { value: EditorTool.WEIGHT, icon: '◆', label: 'Weight' },
     { value: EditorTool.START, icon: '▶', label: 'Start' },
     { value: EditorTool.GOAL, icon: '★', label: 'Goal' },
-    { value: EditorTool.ERASE, icon: '◌', label: 'Erase' },
   ];
 
   generators = Object.entries(GENERATOR_INFO).map(([type, info]) => ({
     type: type as GeneratorType,
     name: info.name,
+    nameEn: info.nameEn,
   }));
 
   aiTabs = [
-    { id: 'generate' as const, label: '✨', name: 'Generate' },
-    { id: 'tutor' as const, label: '🎓', name: 'Tutor' },
-    { id: 'recommend' as const, label: '🏆', name: 'Recommend' },
+    { id: 'generate' as const, label: '✨', i18nKey: 'ai.generate' },
+    { id: 'tutor' as const, label: '🎓', i18nKey: 'ai.tutor' },
+    { id: 'recommend' as const, label: '🏆', i18nKey: 'ai.recommend' },
   ];
 
   get btnClass(): string {
@@ -1006,11 +1078,12 @@ export class ToolbarComponent implements OnDestroy {
 
   constructor(
     public gridService: GridService,
-    private vizService: VisualizationService,
+    public vizService: VisualizationService,
     private themeService: ThemeService,
     private exportService: ExportService,
     private aiService: AIService,
     private apiService: ApiService,
+    private rendererService: GridRendererService,
     private authService: AuthService,
     public i18n: TranslationService,
   ) {
@@ -1023,48 +1096,19 @@ export class ToolbarComponent implements OnDestroy {
       this.authService.user$.subscribe((u) => (this.isLoggedIn = !!u)),
       this.gridService.activeTool$.subscribe((t) => (this.activeTool = t)),
       this.gridService.weightValue$.subscribe((v) => (this.weightValue = v)),
+      // Auto-reset visualization when map changes during run
+      this.gridService.grid$.subscribe(() => {
+        if (this.vizState === VisualizationState.RUNNING || this.vizState === VisualizationState.PAUSED) {
+          this.vizService.reset();
+        }
+      }),
       this.i18n.lang$.subscribe(() => {
+        const stripIcon = (s: string) => s.replace(/^[^\p{L}]+/u, '').trim();
         this.toolsList = [
-          {
-            value: EditorTool.WALL,
-            icon: '▦',
-            label: this.i18n
-              .t('tool.wall')
-              .replace(/[^\w\s]/g, '')
-              .trim(),
-          },
-          {
-            value: EditorTool.WEIGHT,
-            icon: '◆',
-            label: this.i18n
-              .t('tool.weight')
-              .replace(/[^\w\s]/g, '')
-              .trim(),
-          },
-          {
-            value: EditorTool.START,
-            icon: '▶',
-            label: this.i18n
-              .t('tool.start')
-              .replace(/[^\w\s]/g, '')
-              .trim(),
-          },
-          {
-            value: EditorTool.GOAL,
-            icon: '★',
-            label: this.i18n
-              .t('tool.goal')
-              .replace(/[^\w\s]/g, '')
-              .trim(),
-          },
-          {
-            value: EditorTool.ERASE,
-            icon: '◌',
-            label: this.i18n
-              .t('tool.erase')
-              .replace(/[^\w\s]/g, '')
-              .trim(),
-          },
+          { value: EditorTool.WALL, icon: '▦', label: stripIcon(this.i18n.t('tool.wall')) },
+          { value: EditorTool.WEIGHT, icon: '◆', label: stripIcon(this.i18n.t('tool.weight')) },
+          { value: EditorTool.START, icon: '▶', label: stripIcon(this.i18n.t('tool.start')) },
+          { value: EditorTool.GOAL, icon: '★', label: stripIcon(this.i18n.t('tool.goal')) },
         ];
       }),
     );
@@ -1104,6 +1148,9 @@ export class ToolbarComponent implements OnDestroy {
   selectAlgorithm(algo: AlgorithmType): void {
     this.selectedAlgorithm = algo;
     this.activePopup = null;
+    this.vizService.reset();
+    this.rendererService.binaryWeightMode = algo === AlgorithmType.ZERO_ONE_BFS;
+    this.rendererService.render();
   }
 
   selectTool(tool: EditorTool): void {
@@ -1158,6 +1205,16 @@ export class ToolbarComponent implements OnDestroy {
     this.vizService.pause();
   }
 
+  onStepBack(): void {
+    if (this.currentStep > 0) {
+      this.vizService.jumpToStep(this.currentStep - 1);
+    }
+  }
+
+  onSkipToBeginning(): void {
+    this.vizService.jumpToStep(0);
+  }
+
   onStep(): void {
     const grid = this.gridService.getGrid();
     if (!grid) return;
@@ -1183,6 +1240,15 @@ export class ToolbarComponent implements OnDestroy {
     this.vizService.reset();
     this.gridService.clearGrid();
   }
+
+  onResizeGrid(): void {
+    const rows = Math.max(2, Math.min(100, +this.gridRows || 25));
+    const cols = Math.max(4, Math.min(200, +this.gridCols || 50));
+    this.gridRows = rows;
+    this.gridCols = cols;
+    this.vizService.reset();
+    this.gridService.createGrid(rows, cols);
+  }
   onJumpToStep(step: number): void {
     this.vizService.jumpToStep(step);
   }
@@ -1193,7 +1259,7 @@ export class ToolbarComponent implements OnDestroy {
     const currentGrid = this.gridService.getGrid();
     const rows = currentGrid?.rows || 25;
     const cols = currentGrid?.cols || 50;
-    const grid = generateMap(type, rows, cols, { density: this.genDensity, seed: this.genSeed });
+    const grid = generateMap(type, rows, cols, { density: this.genDensity, seed: Math.floor(Math.random() * 1000000) });
     this.gridService.createGrid(grid.rows, grid.cols);
     const current = this.gridService.getGrid()!;
     for (let r = 0; r < grid.rows; r++) {
@@ -1412,7 +1478,14 @@ export class ToolbarComponent implements OnDestroy {
       },
       isPublic: false,
     }).subscribe({
-      next: () => { this.loadSavedMaps(); },
+      next: () => {
+        this.apiService.getMaps().subscribe({
+          next: (maps) => {
+            this.savedMaps = maps;
+            this.activePopup = 'loadmap';
+          },
+        });
+      },
       error: () => {},
     });
   }

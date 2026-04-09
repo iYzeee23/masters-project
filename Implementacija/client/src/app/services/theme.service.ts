@@ -36,8 +36,8 @@ const DARK_COLORS: ThemeColors = {
   goal: '#E87461',         // coral-terra
   open: '#5BA8D4',         // sky blue (frontier)
   closed: '#9B7ED4',       // violet (explored)
-  current: '#E8B84D',      // bright warm amber
-  path: '#E87CA0',         // warm pink (found path)
+  current: '#E87CA0',      // warm pink (processing)
+  path: '#E8B84D',         // bright warm amber (found path)
   weightLow: '#43372C',    // surface
   weightMed: '#544536',    // mid border
   weightHigh: '#655642',   // lighter border
@@ -54,8 +54,8 @@ const LIGHT_COLORS: ThemeColors = {
   goal: '#D05040',         // warm red-coral
   open: '#4A9AC7',         // sky blue (frontier)
   closed: '#7C5FB8',       // violet (explored)
-  current: '#D4952C',      // warm gold
-  path: '#D4688A',         // warm pink (found path)
+  current: '#D4688A',      // warm pink (processing)
+  path: '#D4952C',         // warm gold (found path)
   weightLow: '#EDE4D8',    // secondary bg
   weightMed: '#D7CABC',    // border
   weightHigh: '#C4B5A5',   // darker border

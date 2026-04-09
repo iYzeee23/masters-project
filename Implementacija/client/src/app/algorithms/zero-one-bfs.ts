@@ -128,8 +128,8 @@ export class ZeroOneBFS implements PathfindingAlgorithm {
       const neighborKey = posKey(neighbor);
       const cell = this.grid.cells[neighbor.row][neighbor.col];
 
-      // In 0-1 BFS, weights must be 0 or 1
-      const edgeWeight = cell.weight === 0 ? 0 : 1;
+      // In 0-1 BFS: weight=1 (empty) → cost 0, weight≥2 (weighted) → cost 1
+      const edgeWeight = cell.weight <= 1 ? 0 : 1;
       const newDist = currentDist + edgeWeight;
       const oldDist = this.dist.get(neighborKey);
 

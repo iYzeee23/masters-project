@@ -109,24 +109,18 @@ export function generateWeightedTerrain(
   const grid = createEmptyGrid(rows, cols, start, goal);
   const rng = createRNG(seed);
 
-  // Create 3-5 weighted zones
-  const zoneCount = 3 + Math.floor(rng() * 3);
-  for (let z = 0; z < zoneCount; z++) {
-    const centerR = Math.floor(rng() * rows);
-    const centerC = Math.floor(rng() * cols);
-    const radius = 3 + Math.floor(rng() * 8);
-    const weight = 2 + Math.floor(rng() * 8);
+  // Scatter random weights across the map (30-50% coverage)
+  const coverage = 0.3 + rng() * 0.2;
+  const totalCells = rows * cols;
+  const weightedCount = Math.floor(totalCells * coverage);
 
-    for (let r = Math.max(0, centerR - radius); r < Math.min(rows, centerR + radius); r++) {
-      for (let c = Math.max(0, centerC - radius); c < Math.min(cols, centerC + radius); c++) {
-        if (isStartOrGoal(r, c, start, goal)) continue;
-        const dist = Math.abs(r - centerR) + Math.abs(c - centerC);
-        if (dist <= radius) {
-          grid.cells[r][c].type = CellType.WEIGHT;
-          grid.cells[r][c].weight = weight;
-        }
-      }
-    }
+  for (let i = 0; i < weightedCount; i++) {
+    const r = Math.floor(rng() * rows);
+    const c = Math.floor(rng() * cols);
+    if (isStartOrGoal(r, c, start, goal)) continue;
+    if (grid.cells[r][c].type === CellType.WALL) continue;
+    grid.cells[r][c].type = CellType.WEIGHT;
+    grid.cells[r][c].weight = 2 + Math.floor(rng() * 9); // 2-10
   }
   return grid;
 }
@@ -202,7 +196,37 @@ export function generateOpenField(rows: number, cols: number): Grid {
 // ============================================================
 // FACTORY
 // ============================================================
-export type GeneratorType = 'random' | 'maze' | 'weighted' | 'bottleneck' | 'city' | 'open';
+export type GeneratorType = 'random' | 'maze' | 'weighted' | 'mixed' | 'bottleneck' | 'city' | 'open';
+
+export function generateMixed(rows: number, cols: number, density: number, seed: number): Grid {
+  const start: Position = { row: Math.floor(rows / 2), col: Math.floor(cols / 4) };
+  const goal: Position = { row: Math.floor(rows / 2), col: Math.floor(3 * cols / 4) };
+  const grid = createEmptyGrid(rows, cols, start, goal);
+  const rng = createRNG(seed);
+
+  // Random walls (~density%)
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (isStartOrGoal(r, c, start, goal)) continue;
+      if (rng() * 100 < density) {
+        grid.cells[r][c].type = CellType.WALL;
+        grid.cells[r][c].weight = 1;
+      }
+    }
+  }
+  // Random weights on empty cells (~30%)
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (isStartOrGoal(r, c, start, goal)) continue;
+      if (grid.cells[r][c].type !== CellType.EMPTY) continue;
+      if (rng() < 0.3) {
+        grid.cells[r][c].type = CellType.WEIGHT;
+        grid.cells[r][c].weight = 2 + Math.floor(rng() * 9);
+      }
+    }
+  }
+  return grid;
+}
 
 export function generateMap(
   type: GeneratorType,
@@ -217,6 +241,7 @@ export function generateMap(
     case 'random': return generateRandomObstacles(rows, cols, density, seed);
     case 'maze': return generateMaze(rows, cols, seed);
     case 'weighted': return generateWeightedTerrain(rows, cols, seed);
+    case 'mixed': return generateMixed(rows, cols, density, seed);
     case 'bottleneck': return generateBottleneck(rows, cols, seed);
     case 'city': return generateCityBlocks(rows, cols, seed);
     case 'open': return generateOpenField(rows, cols);
@@ -224,9 +249,10 @@ export function generateMap(
 }
 
 export const GENERATOR_INFO: Record<GeneratorType, { name: string; nameEn: string; short: string; description: string }> = {
-  random: { name: 'Nasumične prepreke', nameEn: 'Random Obstacles', short: 'Random', description: 'Nasumično raspoređene prepreke (podešava se gustina %)' },
   maze: { name: 'Lavirint', nameEn: 'Maze', short: 'Maze', description: 'Rekurzivna podela prostora, garantovana rešivost' },
+  random: { name: 'Nasumične prepreke', nameEn: 'Random Obstacles', short: 'Random', description: 'Nasumično raspoređene prepreke (podešava se gustina %)' },
   weighted: { name: 'Težinski teren', nameEn: 'Weighted Terrain', short: 'Weight', description: 'Zone sa različitim težinama na terenu' },
+  mixed: { name: 'Mešovito', nameEn: 'Mixed', short: 'Mixed', description: 'Nasumične prepreke + težinski teren' },
   bottleneck: { name: 'Usko grlo', nameEn: 'Bottleneck', short: 'Bottle', description: 'Zid sa jednim uskim prolazom' },
   city: { name: 'Gradski blokovi', nameEn: 'City Blocks', short: 'City', description: 'Ortogonalni koridori (mreža ulica)' },
   open: { name: 'Otvoreno polje', nameEn: 'Open Field', short: 'Open', description: 'Prazan grid bez prepreka (bazna referenca)' },
