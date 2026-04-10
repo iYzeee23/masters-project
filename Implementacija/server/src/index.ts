@@ -12,6 +12,7 @@ import runRoutes from './routes/runs';
 import playgroundRoutes from './routes/playground';
 import uploadRoutes from './routes/upload';
 import aiRoutes from './routes/ai';
+import benchmarkRoutes from './routes/benchmark';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/runs', runRoutes);
 app.use('/api/playground', playgroundRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/benchmark', benchmarkRoutes);
 
 // Socket.io
 io.on('connection', (socket) => {

@@ -1,0 +1,19 @@
+[
+  {
+    "algorithm": "",
+    "heuristic": "",
+    "neighborMode": 4,
+    "expandedNodes": 708,
+    "maxFrontierSize": 30,
+    "pathCost": 49,
+    "pathLength": 50,
+    "totalSteps": 2140,
+    "executionTimeMs": 1.5,
+    "foundPath": true,
+    "mapRows": 25,
+    "mapCols": 50,
+    "wallCount": 389,
+    "weightedCount": 257,
+    "timestamp": "2026-04-10T12:03:18.793Z"
+  }
+]

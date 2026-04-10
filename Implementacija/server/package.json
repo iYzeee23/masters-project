@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "benchmark": "ts-node src/run-benchmark.ts",
+    "benchmark:dry": "ts-node src/run-benchmark.ts --dry-run",
+    "ai-benchmark": "ts-node src/run-ai-benchmark.ts",
+    "ai-benchmark:dry": "ts-node src/run-ai-benchmark.ts --dry-run",
+    "ai-eval": "ts-node src/generate-ai-evaluation.ts"
   },
   "keywords": [],
   "author": "",

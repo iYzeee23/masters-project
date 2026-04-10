@@ -15,9 +15,10 @@ __pycache__/
 venv/
 .venv/
 
-# Environment
+# Environment — NEVER commit secrets
 .env
-*.env.local
+.env.*
+!.env.example
 
 # Node
 node_modules/
@@ -31,8 +32,9 @@ build/
 .angular/
 
 # Tailwind output (generated)
-src/tailwind-output.css
+**/tailwind-output.css
 
 # Logs
 npm-debug.log*
+yarn-error.log
 *.log
