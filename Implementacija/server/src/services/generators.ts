@@ -355,6 +355,153 @@ export function runAlgorithm(grid: Grid, algo: AlgoName): AlgoResult {
   }
 }
 
+// ============================================================
+// PATH-RETURNING ALGORITHM RUNNERS (for Playground solve)
+// ============================================================
+
+export interface AlgoResultWithPath extends AlgoResult {
+  path: [number, number][] | null;
+}
+
+function rebuildPath(parent: Map<string, string | null>, goalKey: string): [number, number][] {
+  const path: [number, number][] = [];
+  let cur: string | null = goalKey;
+  while (cur !== null) {
+    const [r, c] = cur.split(',').map(Number);
+    path.unshift([r, c]);
+    cur = parent.get(cur) ?? null;
+  }
+  return path;
+}
+
+function runBFSWithPath(grid: Grid): AlgoResultWithPath {
+  const { start: s, goal: g } = grid;
+  const sk = pk(s.row, s.col);
+  const vis = new Set<string>([sk]);
+  const par = new Map<string, string | null>([[sk, null]]);
+  const q: [number, number, number][] = [[s.row, s.col, 0]];
+  let exp = 0;
+  while (q.length > 0) {
+    const [r, c, d] = q.shift()!;
+    const ck = pk(r, c);
+    if (r === g.row && c === g.col) return { expanded: exp, pathCost: d, foundPath: true, path: rebuildPath(par, ck) };
+    exp++;
+    for (const [nr, nc] of nbrs(grid, r, c)) {
+      const nk = pk(nr, nc);
+      if (!vis.has(nk)) { vis.add(nk); par.set(nk, ck); q.push([nr, nc, d + 1]); }
+    }
+  }
+  return { expanded: exp, pathCost: null, foundPath: false, path: null };
+}
+
+function runDFSWithPath(grid: Grid): AlgoResultWithPath {
+  const { start: s, goal: g } = grid;
+  const vis = new Set<string>();
+  const par = new Map<string, string | null>([[pk(s.row, s.col), null]]);
+  const stk: [number, number][] = [[s.row, s.col]];
+  let exp = 0;
+  while (stk.length > 0) {
+    const [r, c] = stk.pop()!;
+    const k = pk(r, c);
+    if (vis.has(k)) continue;
+    vis.add(k);
+    if (r === g.row && c === g.col) return { expanded: exp, pathCost: exp, foundPath: true, path: rebuildPath(par, k) };
+    exp++;
+    for (const [nr, nc] of nbrs(grid, r, c)) {
+      const nk = pk(nr, nc);
+      if (!vis.has(nk)) { par.set(nk, k); stk.push([nr, nc]); }
+    }
+  }
+  return { expanded: exp, pathCost: null, foundPath: false, path: null };
+}
+
+function runPQWithPath(grid: Grid, mode: 'dijkstra'|'a_star'|'greedy'|'swarm'|'convergent_swarm'): AlgoResultWithPath {
+  const { start: s, goal: g } = grid;
+  const gs = new Map<string, number>();
+  const cl = new Set<string>();
+  const par = new Map<string, string | null>();
+  const op: { r: number; c: number; f: number; g: number }[] = [];
+  const sk = pk(s.row, s.col);
+  gs.set(sk, 0);
+  par.set(sk, null);
+  const h0 = mh(s.row, s.col, g.row, g.col);
+  const w = mode === 'swarm' ? 2 : mode === 'convergent_swarm' ? 5 : 1;
+  const f0 = mode === 'dijkstra' ? 0 : mode === 'greedy' ? h0 : w * h0;
+  op.push({ r: s.row, c: s.col, f: f0, g: 0 });
+  let exp = 0;
+  while (op.length > 0) {
+    let mi = 0;
+    for (let i = 1; i < op.length; i++) if (op[i].f < op[mi].f) mi = i;
+    const cur = op[mi]; op.splice(mi, 1);
+    const ck = pk(cur.r, cur.c);
+    if (cl.has(ck)) continue;
+    cl.add(ck);
+    if (cur.r === g.row && cur.c === g.col) return { expanded: exp, pathCost: cur.g, foundPath: true, path: rebuildPath(par, ck) };
+    exp++;
+    for (const [nr, nc, wt] of nbrs(grid, cur.r, cur.c)) {
+      const nk = pk(nr, nc);
+      if (cl.has(nk)) continue;
+      const ng = cur.g + wt;
+      if (ng < (gs.get(nk) ?? Infinity)) {
+        gs.set(nk, ng);
+        par.set(nk, ck);
+        const h = mh(nr, nc, g.row, g.col);
+        let f: number;
+        if (mode === 'dijkstra') f = ng;
+        else if (mode === 'greedy') f = h;
+        else f = ng + w * h;
+        op.push({ r: nr, c: nc, f, g: ng });
+      }
+    }
+  }
+  return { expanded: exp, pathCost: null, foundPath: false, path: null };
+}
+
+function runZeroOneBFSWithPath(grid: Grid): AlgoResultWithPath {
+  const { start: s, goal: g } = grid;
+  const dist = new Map<string, number>();
+  const cl = new Set<string>();
+  const par = new Map<string, string | null>();
+  const dq: [number, number][] = [[s.row, s.col]];
+  const sk = pk(s.row, s.col);
+  dist.set(sk, 0);
+  par.set(sk, null);
+  let exp = 0;
+  while (dq.length > 0) {
+    const [r, c] = dq.shift()!;
+    const ck = pk(r, c);
+    if (cl.has(ck)) continue;
+    cl.add(ck);
+    const d = dist.get(ck)!;
+    if (r === g.row && c === g.col) return { expanded: exp, pathCost: d, foundPath: true, path: rebuildPath(par, ck) };
+    exp++;
+    for (const [nr, nc, wt] of nbrs(grid, r, c)) {
+      const nk = pk(nr, nc);
+      const ew = wt <= 1 ? 0 : 1;
+      const nd = d + ew;
+      if (nd < (dist.get(nk) ?? Infinity)) {
+        dist.set(nk, nd);
+        par.set(nk, ck);
+        if (ew === 0) dq.unshift([nr, nc]); else dq.push([nr, nc]);
+      }
+    }
+  }
+  return { expanded: exp, pathCost: null, foundPath: false, path: null };
+}
+
+export function runAlgorithmWithPath(grid: Grid, algo: AlgoName): AlgoResultWithPath {
+  switch (algo) {
+    case 'bfs': return runBFSWithPath(grid);
+    case 'dfs': return runDFSWithPath(grid);
+    case 'dijkstra': return runPQWithPath(grid, 'dijkstra');
+    case 'a_star': return runPQWithPath(grid, 'a_star');
+    case 'greedy': return runPQWithPath(grid, 'greedy');
+    case 'swarm': return runPQWithPath(grid, 'swarm');
+    case 'convergent_swarm': return runPQWithPath(grid, 'convergent_swarm');
+    case 'zero_one_bfs': return runZeroOneBFSWithPath(grid);
+  }
+}
+
 /**
  * Run all 8 algorithms on a grid, return results map.
  */

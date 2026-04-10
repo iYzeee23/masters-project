@@ -149,4 +149,27 @@ export class AIService {
       language: this.i18n.getLanguage(),
     }, { headers: this.headers }).pipe(timeout(60000));
   }
+
+  getPlaygroundFeedback(data: {
+    algorithm: string;
+    userPath: number[][];
+    userCost: number;
+    optimalCost: number | null;
+    optimalPath: number[][] | null;
+    score: number;
+    breakdown: any;
+    grid: Grid;
+  }): Observable<{ evaluation: any; insight: any; tip: any }> {
+    return this.http.post<{ evaluation: any; insight: any; tip: any }>(`${this.API}/playground-feedback`, {
+      algorithm: data.algorithm,
+      userPath: data.userPath,
+      userCost: data.userCost,
+      optimalCost: data.optimalCost,
+      optimalPath: data.optimalPath,
+      score: data.score,
+      breakdown: data.breakdown,
+      mapSummary: this.summarizeGrid(data.grid),
+      language: this.i18n.getLanguage(),
+    }, { headers: this.headers }).pipe(timeout(60000));
+  }
 }

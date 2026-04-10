@@ -57,6 +57,23 @@ const compareInsightSchema = z.object({
   language: z.enum(['sr', 'en']).optional(),
 });
 
+const playgroundFeedbackSchema = z.object({
+  algorithm: z.string().min(1).max(50),
+  userPath: z.array(z.array(z.number())),
+  userCost: z.number(),
+  optimalCost: z.number().nullable(),
+  optimalPath: z.array(z.array(z.number())).nullable(),
+  score: z.number(),
+  breakdown: z.object({
+    costPenalty: z.number(),
+    invalidMovePenalty: z.number(),
+    speedBonus: z.number(),
+    matchBonus: z.number(),
+  }),
+  mapSummary: z.record(z.string(), z.unknown()),
+  language: z.enum(['sr', 'en']).optional(),
+});
+
 // POST /api/ai/tutor — Key moments from trace
 router.post('/tutor', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
@@ -488,6 +505,74 @@ Be specific: reference actual numbers from the results.`;
     res.json({ insight: { [ciLang]: primary, [altLang]: alt } });
   } catch (err) {
     console.error('[AI compare-insight]', err);
+    res.status(500).json({ error: 'AI request failed' });
+  }
+});
+
+// POST /api/ai/playground-feedback — AI feedback on user's playground attempt
+router.post('/playground-feedback', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const parsed = playgroundFeedbackSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+      return;
+    }
+    const { algorithm, userPath, userCost, optimalCost, optimalPath, score, breakdown, mapSummary, language: lang = 'en' } = parsed.data;
+
+    const userPathLen = userPath.length;
+    const optPathLen = optimalPath?.length ?? 0;
+    const costDiff = optimalCost !== null ? (userCost - optimalCost) : null;
+
+    const basePrompt = `You are a computer science professor giving feedback to a student who tried to replicate a ${algorithm} path on a grid map.
+
+STUDENT'S ATTEMPT:
+- Algorithm to replicate: ${algorithm}
+- User path length: ${userPathLen} cells, cost: ${userCost}
+- Optimal (${algorithm}) path length: ${optPathLen} cells, cost: ${optimalCost ?? 'N/A (no path)'}
+- Cost difference: ${costDiff !== null ? costDiff : 'N/A'}
+- Score: ${score}/110
+- Breakdown: cost penalty -${breakdown.costPenalty}, invalid moves penalty -${breakdown.invalidMovePenalty}, speed bonus +${breakdown.speedBonus}, match bonus +${breakdown.matchBonus}
+
+MAP PROPERTIES: ${JSON.stringify(mapSummary)}
+
+ALGORITHM BEHAVIOR REFERENCE:
+- BFS: FIFO queue, layer by layer. Guarantees shortest path by hops (unweighted). 
+- DFS: LIFO stack, goes deep first. Does NOT guarantee optimal path.
+- Dijkstra: Priority queue by g(n). Guarantees cheapest path. Explores in cost order.
+- A*: f(n)=g(n)+h(n). Heuristic guides toward goal → fewer nodes than Dijkstra, still optimal.
+- Greedy: f(n)=h(n) only. Very fast, but NOT optimal. Gets trapped by walls.
+- Swarm/Conv. Swarm: Weighted A* with w>1. Faster but possibly suboptimal.
+- 0-1 BFS: Deque for 0/1 weights. Optimal for binary-weight grids.
+
+Provide feedback in exactly 3 sections as JSON:
+
+1. "evaluation": Brief assessment of the student's path — was it close to optimal? What did they do well or poorly? Reference specific numbers. (2-3 sentences)
+
+2. "insight": Explain how ${algorithm} actually works and why its path looks the way it does on this specific map. What should the student look for when replicating this algorithm? (2-3 sentences)
+
+3. "tip": One concrete, actionable tip for the student to get a better score next time with ${algorithm} on similar maps. (1-2 sentences)`;
+
+    const langSr = '\nIMPORTANT: Write ALL text in Serbian (Latin script).';
+    const langEn = '\nWrite in English.';
+
+    const [primaryResult, altResult] = await Promise.all([
+      callAI(`${basePrompt}${lang === 'sr' ? langSr : langEn}\n\nRespond ONLY with valid JSON:\n{ "evaluation": string, "insight": string, "tip": string }`, { maxTokens: 800 }),
+      callAI(`${basePrompt}${lang === 'sr' ? langEn : langSr}\n\nRespond ONLY with valid JSON:\n{ "evaluation": string, "insight": string, "tip": string }`, { maxTokens: 800 }),
+    ]);
+
+    let primary: any = {};
+    let alt: any = {};
+    try { primary = JSON.parse(primaryResult); } catch { /* empty */ }
+    try { alt = JSON.parse(altResult); } catch { /* empty */ }
+
+    const altLang = lang === 'sr' ? 'en' : 'sr';
+    res.json({
+      evaluation: { [lang]: primary.evaluation || '', [altLang]: alt.evaluation || '' },
+      insight: { [lang]: primary.insight || '', [altLang]: alt.insight || '' },
+      tip: { [lang]: primary.tip || '', [altLang]: alt.tip || '' },
+    });
+  } catch (err) {
+    console.error('[AI playground-feedback]', err);
     res.status(500).json({ error: 'AI request failed' });
   }
 });

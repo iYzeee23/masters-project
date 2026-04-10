@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { PlaygroundAttempt } from '../models';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { gridFromWireFormat, runAlgorithmWithPath, AlgoName, ALL_ALGOS } from '../services/generators';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ const createAttemptSchema = z.object({
     costPenalty: z.number(),
     invalidMovePenalty: z.number(),
     speedBonus: z.number(),
+    matchBonus: z.number(),
   }),
   timeSpentMs: z.number(),
 });
@@ -28,18 +30,48 @@ function validateScore(data: z.infer<typeof createAttemptSchema>): number {
   const costPenalty = Math.max(0, Math.min(50, breakdown.costPenalty));
   const invalidMovePenalty = Math.max(0, Math.min(50, breakdown.invalidMovePenalty));
   const speedBonus = Math.max(0, Math.min(10, breakdown.speedBonus));
+  const matchBonus = Math.max(0, Math.min(10, breakdown.matchBonus));
 
   if (userDeclaredNoPath && optimalCost === null) {
     // Correctly declared no path
-    return Math.min(100, 100 + speedBonus);
+    return Math.min(110, 100 + speedBonus);
   }
   if (userDeclaredNoPath && optimalCost !== null) {
     // Wrongly declared no path
     return 0;
   }
 
-  return Math.max(0, Math.min(100, 100 - costPenalty - invalidMovePenalty + speedBonus));
+  return Math.max(0, Math.min(110, 100 - costPenalty - invalidMovePenalty + speedBonus + matchBonus));
 }
+
+const solveSchema = z.object({
+  grid: z.object({
+    rows: z.number().int().min(2).max(200),
+    cols: z.number().int().min(2).max(400),
+    walls: z.array(z.array(z.number())),
+    weights: z.array(z.object({ pos: z.array(z.number()), weight: z.number() })),
+    start: z.array(z.number()),
+    goal: z.array(z.number()),
+  }),
+  algorithm: z.enum(['bfs', 'dfs', 'dijkstra', 'a_star', 'greedy', 'swarm', 'convergent_swarm', 'zero_one_bfs']),
+});
+
+// POST /api/playground/solve — Run algorithm server-side, return optimal result with path
+router.post('/solve', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const parsed = solveSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+      return;
+    }
+    const grid = gridFromWireFormat(parsed.data.grid);
+    const result = runAlgorithmWithPath(grid, parsed.data.algorithm as AlgoName);
+    res.json(result);
+  } catch (err) {
+    console.error('[playground/solve]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // GET /api/playground/leaderboard
 router.get('/leaderboard', async (_req, res: Response) => {
@@ -104,6 +136,7 @@ router.post('/attempts', authMiddleware, async (req: AuthRequest, res: Response)
         costPenalty: Math.max(0, Math.min(50, parsed.data.breakdown.costPenalty)),
         invalidMovePenalty: Math.max(0, Math.min(50, parsed.data.breakdown.invalidMovePenalty)),
         speedBonus: Math.max(0, Math.min(10, parsed.data.breakdown.speedBonus)),
+        matchBonus: Math.max(0, Math.min(10, parsed.data.breakdown.matchBonus)),
       },
       userId: req.userId,
     });

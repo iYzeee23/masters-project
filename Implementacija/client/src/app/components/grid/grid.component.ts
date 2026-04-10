@@ -52,6 +52,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @Input() mode: 'editor' | 'playground' = 'editor';
   @Output() cellClicked = new EventEmitter<Position>();
+  @Output() cellRightClicked = new EventEmitter<Position>();
 
   activeTool: EditorTool = EditorTool.WALL;
   weightValue = 3;
@@ -61,6 +62,8 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   private isErasing = false;
   private isDraggingStart = false;
   private isDraggingGoal = false;
+  private isPlaygroundDrawing = false;
+  private isPlaygroundErasing = false;
   private lastDrawnCell: string | null = null;
   private subs: Subscription[] = [];
 
@@ -123,9 +126,17 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     const pos = this.getGridPos(event);
     if (!pos) return;
 
-    // Playground mode: emit cell click for path building
+    // Playground mode: left-click draws, right-click erases
     if (this.mode === 'playground') {
-      this.cellClicked.emit(pos);
+      if (event.button === 2) {
+        this.isPlaygroundErasing = true;
+        this.lastDrawnCell = `${pos.row},${pos.col}`;
+        this.cellRightClicked.emit(pos);
+      } else {
+        this.isPlaygroundDrawing = true;
+        this.lastDrawnCell = `${pos.row},${pos.col}`;
+        this.cellClicked.emit(pos);
+      }
       return;
     }
 
@@ -156,7 +167,20 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onMouseMove(event: MouseEvent): void {
-    if (this.mode === 'playground') return;
+    if (this.mode === 'playground') {
+      if (!this.isPlaygroundDrawing && !this.isPlaygroundErasing) return;
+      const pos = this.getGridPos(event);
+      if (!pos) return;
+      const cellKey = `${pos.row},${pos.col}`;
+      if (cellKey === this.lastDrawnCell) return;
+      this.lastDrawnCell = cellKey;
+      if (this.isPlaygroundErasing) {
+        this.cellRightClicked.emit(pos);
+      } else {
+        this.cellClicked.emit(pos);
+      }
+      return;
+    }
 
     const pos = this.getGridPos(event);
     if (!pos) return;
@@ -187,6 +211,8 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isErasing = false;
     this.isDraggingStart = false;
     this.isDraggingGoal = false;
+    this.isPlaygroundDrawing = false;
+    this.isPlaygroundErasing = false;
     this.lastDrawnCell = null;
   }
 

@@ -12,6 +12,7 @@ export interface IPlaygroundAttempt extends Document {
     costPenalty: number;
     invalidMovePenalty: number;
     speedBonus: number;
+    matchBonus: number;
   };
   timeSpentMs: number;
   createdAt: Date;
@@ -39,6 +40,7 @@ const PlaygroundAttemptSchema = new Schema<IPlaygroundAttempt>(
       costPenalty: { type: Number, default: 0 },
       invalidMovePenalty: { type: Number, default: 0 },
       speedBonus: { type: Number, default: 0 },
+      matchBonus: { type: Number, default: 0 },
     },
     timeSpentMs: { type: Number, required: true },
   },

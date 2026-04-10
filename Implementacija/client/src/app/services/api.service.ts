@@ -77,6 +77,10 @@ export class ApiService {
     return this.http.get<any[]>(`${this.API}/playground/my-attempts`, { headers: this.headers });
   }
 
+  solvePlayground(data: { grid: any; algorithm: string }): Observable<any> {
+    return this.http.post(`${this.API}/playground/solve`, data, { headers: this.headers });
+  }
+
   // ============================================================
   // STATS
   // ============================================================

@@ -222,11 +222,12 @@ export class GridRendererService {
         }
 
         // Start and goal: use path color when path is found, otherwise their own color
+        // Start and goal: only show as path color if actually in path set
         if (key === this.renderState.startKey) {
-          color = this.renderState.path.size > 0 ? c.path : c.start;
+          color = this.renderState.path.has(key) ? c.path : c.start;
         }
         if (key === this.renderState.goalKey) {
-          color = this.renderState.path.size > 0 ? c.path : c.goal;
+          color = this.renderState.path.has(key) ? c.path : c.goal;
         }
 
         // Draw cell — rounded corners for soft aesthetic
@@ -276,10 +277,11 @@ export class GridRendererService {
       }
     }
 
-    // Draw start/goal icons — use path color when path is found
-    const hasPath = this.renderState.path.size > 0;
-    this.drawIcon(grid.start, '▶', hasPath ? c.path : c.start);
-    this.drawIcon(grid.goal, '★', hasPath ? c.path : c.goal);
+    // Draw start/goal icons — only color as path if they're actually IN the path set
+    const startInPath = this.renderState.path.has(posKey(grid.start));
+    const goalInPath = this.renderState.path.has(posKey(grid.goal));
+    this.drawIcon(grid.start, '▶', startInPath ? c.path : c.start);
+    this.drawIcon(grid.goal, '★', goalInPath ? c.path : c.goal);
   }
 
   private drawIcon(pos: Position, icon: string, bgColor: string): void {

@@ -115,6 +115,7 @@ export const ALGO_COLORS: Record<string, string> = {
   swarm:             '#06B6D4', // cyan
   convergent_swarm:  '#EC4899', // pink
   zero_one_bfs:      '#EAB308', // yellow
+  user:              '#E8B84D', // warm amber (playground user path)
 };
 
 /** Darken a hex color by mixing with black (factor 0-1, 0=same, 1=black) */

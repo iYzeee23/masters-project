@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -6,6 +6,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { ThemeService } from '../../services/theme.service';
 import { TranslationService } from '../../services/translation.service';
+import { SocketService } from '../../services/socket.service';
 
 @Component({
   selector: 'app-profile-page',
@@ -386,6 +387,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private router: Router,
     private themeService: ThemeService,
+    private cdr: ChangeDetectorRef,
+    private socketService: SocketService,
     public i18n: TranslationService,
   ) {}
 
@@ -410,19 +413,33 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     // Load stats from server
     this.api.getStats().subscribe({
-      next: (s) => (this.stats = s),
+      next: (s) => { this.stats = s; this.cdr.detectChanges(); },
       error: () => {},
     });
 
     // Load leaderboard
     this.api.getLeaderboard().subscribe({
-      next: (lb) => (this.leaderboard = lb),
+      next: (lb) => { this.leaderboard = lb; this.cdr.detectChanges(); },
       error: () => {},
     });
+
+    // Real-time updates via Socket.io
+    this.socketService.connect();
+    this.subs.push(
+      this.socketService.leaderboardUpdate$.subscribe(() => {
+        this.api.getLeaderboard().subscribe({
+          next: (lb) => { this.leaderboard = lb; this.cdr.detectChanges(); },
+        });
+        this.api.getStats().subscribe({
+          next: (s) => { this.stats = s; this.cdr.detectChanges(); },
+        });
+      }),
+    );
   }
 
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
+    this.socketService.disconnect();
   }
 
   onAvatarChange(event: Event): void {
