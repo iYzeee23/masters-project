@@ -23,9 +23,12 @@ export interface IBenchmarkResult extends Document {
   /* ── Results ──────────────────────────────────────────── */
   expandedNodes: number;
   pathCost: number | null;
+  truePathCost: number | null;
   pathLength: number | null;
+  maxFrontier: number;
   foundPath: boolean;
   executionTimeMs: number;
+  refOptimalCost: number | null;
 
   /* ── Timestamps ───────────────────────────────────────── */
   createdAt: Date;
@@ -50,9 +53,12 @@ const BenchmarkResultSchema = new Schema<IBenchmarkResult>({
 
   expandedNodes:       { type: Number, required: true },
   pathCost:            { type: Number, default: null },
+  truePathCost:        { type: Number, default: null },
   pathLength:          { type: Number, default: null },
+  maxFrontier:         { type: Number, default: 0 },
   foundPath:           { type: Boolean, required: true },
   executionTimeMs:     { type: Number, required: true },
+  refOptimalCost:      { type: Number, default: null },
 }, { timestamps: true });
 
 // Compound index for common queries

@@ -40,8 +40,13 @@ export interface BenchmarkAlgoConfig {
 
 export interface BenchmarkAlgoResult {
   expandedNodes: number;
+  /** Cost as computed by the algorithm's own distance label (semantics differ per algorithm). */
   pathCost: number | null;
+  /** Cost of the returned path measured on a common scale (sum of terrain weights). */
+  truePathCost: number | null;
   pathLength: number | null;
+  /** Largest number of simultaneously stored frontier entries — proxy for memory usage. */
+  maxFrontier: number;
   foundPath: boolean;
   executionTimeMs: number;
 }
@@ -65,6 +70,8 @@ export interface SingleBenchmarkResult {
   algo: BenchmarkAlgoConfig;
   result: BenchmarkAlgoResult;
   evaluationCategory: string;
+  /** Cost of the provably cheapest path on this map (Dijkstra reference), or null if none exists. */
+  refOptimalCost: number | null;
 }
 
 // ============================================================
@@ -110,18 +117,84 @@ function neighbors(grid: Grid, r: number, c: number, mode: 4 | 8): [number, numb
 function pk(r: number, c: number): string { return `${r},${c}`; }
 
 // ============================================================
-// ENHANCED ALGORITHM IMPLEMENTATIONS
+// BINARY MIN-HEAP
 // ============================================================
 
-function rebuildPathLength(parent: Map<string, string | null>, goalKey: string): number {
-  let len = 0;
+interface HeapNode { r: number; c: number; f: number; g: number; }
+
+/** Binary min-heap over f — mirrors the priority queue used by the client-side engine. */
+class MinHeap {
+  private data: HeapNode[] = [];
+
+  get size(): number { return this.data.length; }
+
+  push(node: HeapNode): void {
+    this.data.push(node);
+    let i = this.data.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.data[p].f <= this.data[i].f) break;
+      [this.data[p], this.data[i]] = [this.data[i], this.data[p]];
+      i = p;
+    }
+  }
+
+  pop(): HeapNode | undefined {
+    if (this.data.length === 0) return undefined;
+    const top = this.data[0];
+    const last = this.data.pop()!;
+    if (this.data.length > 0) {
+      this.data[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = 2 * i + 2;
+        let m = i;
+        if (l < this.data.length && this.data[l].f < this.data[m].f) m = l;
+        if (r < this.data.length && this.data[r].f < this.data[m].f) m = r;
+        if (m === i) break;
+        [this.data[m], this.data[i]] = [this.data[i], this.data[m]];
+        i = m;
+      }
+    }
+    return top;
+  }
+}
+
+// ============================================================
+// PATH RECONSTRUCTION AND COMMON-SCALE COST
+// ============================================================
+
+function rebuildPath(parent: Map<string, string | null>, goalKey: string): [number, number][] {
+  const path: [number, number][] = [];
   let cur: string | null = goalKey;
   while (cur !== null) {
-    len++;
+    const [r, c] = cur.split(',').map(Number);
+    path.push([r, c]);
     cur = parent.get(cur) ?? null;
   }
-  return len;
+  return path.reverse();
 }
+
+/**
+ * Cost of a concrete path measured on one common scale: the sum of terrain weights of
+ * every entered cell, with diagonal steps scaled by sqrt(2). Algorithms label distances
+ * differently (BFS counts steps, 0-1 BFS collapses weights <= 1 to zero), so their internal
+ * labels are not mutually comparable; this measure is.
+ */
+function measurePathCost(grid: Grid, path: [number, number][]): number {
+  let total = 0;
+  for (let i = 1; i < path.length; i++) {
+    const [pr, pc] = path[i - 1];
+    const [r, c] = path[i];
+    const isDiag = pr !== r && pc !== c;
+    total += grid.cells[r][c].weight * (isDiag ? Math.SQRT2 : 1);
+  }
+  return total;
+}
+
+// ============================================================
+// ENHANCED ALGORITHM IMPLEMENTATIONS
+// ============================================================
 
 function runBFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   const t0 = performance.now();
@@ -131,16 +204,23 @@ function runBFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   const par = new Map<string, string | null>([[sk, null]]);
   const q: [number, number, number][] = [[s.row, s.col, 0]];
   let exp = 0;
-  while (q.length > 0) {
-    const [r, c, d] = q.shift()!;
+  let maxFrontier = 1;
+  let head = 0;
+  while (head < q.length) {
+    const [r, c, d] = q[head++];
+    maxFrontier = Math.max(maxFrontier, q.length - head + 1);
     const ck = pk(r, c);
     if (r === g.row && c === g.col) {
+      const elapsed = performance.now() - t0;
+      const path = rebuildPath(par, ck);
       return {
         expandedNodes: exp,
         pathCost: d,
-        pathLength: rebuildPathLength(par, ck),
+        truePathCost: measurePathCost(grid, path),
+        pathLength: path.length,
+        maxFrontier,
         foundPath: true,
-        executionTimeMs: performance.now() - t0,
+        executionTimeMs: elapsed,
       };
     }
     exp++;
@@ -156,7 +236,9 @@ function runBFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   return {
     expandedNodes: exp,
     pathCost: null,
+    truePathCost: null,
     pathLength: null,
+    maxFrontier,
     foundPath: false,
     executionTimeMs: performance.now() - t0,
   };
@@ -169,24 +251,27 @@ function runDFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   const par = new Map<string, string | null>([[pk(s.row, s.col), null]]);
   const stk: [number, number][] = [[s.row, s.col]];
   let exp = 0;
-  let cost = 0;
+  let maxFrontier = 1;
   while (stk.length > 0) {
+    maxFrontier = Math.max(maxFrontier, stk.length);
     const [r, c] = stk.pop()!;
     const k = pk(r, c);
     if (vis.has(k)) continue;
     vis.add(k);
     if (r === g.row && c === g.col) {
-      const pl = rebuildPathLength(par, k);
+      const elapsed = performance.now() - t0;
+      const path = rebuildPath(par, k);
       return {
         expandedNodes: exp,
-        pathCost: cost,
-        pathLength: pl,
+        pathCost: path.length - 1,
+        truePathCost: measurePathCost(grid, path),
+        pathLength: path.length,
+        maxFrontier,
         foundPath: true,
-        executionTimeMs: performance.now() - t0,
+        executionTimeMs: elapsed,
       };
     }
     exp++;
-    cost++;
     for (const [nr, nc] of neighbors(grid, r, c, mode)) {
       const nk = pk(nr, nc);
       if (!vis.has(nk)) { par.set(nk, k); stk.push([nr, nc]); }
@@ -195,7 +280,9 @@ function runDFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   return {
     expandedNodes: exp,
     pathCost: null,
+    truePathCost: null,
     pathLength: null,
+    maxFrontier,
     foundPath: false,
     executionTimeMs: performance.now() - t0,
   };
@@ -213,7 +300,6 @@ function runPQEnhanced(
   const gs = new Map<string, number>();
   const cl = new Set<string>();
   const par = new Map<string, string | null>();
-  const op: { r: number; c: number; f: number; g: number }[] = [];
 
   const sk = pk(s.row, s.col);
   gs.set(sk, 0);
@@ -234,28 +320,30 @@ function runPQEnhanced(
   const f0 = algoMode === 'dijkstra' ? 0
            : algoMode === 'greedy' ? h0
            : w * h0;
+  const op = new MinHeap();
   op.push({ r: s.row, c: s.col, f: f0, g: 0 });
   let exp = 0;
+  let maxFrontier = 1;
 
-  while (op.length > 0) {
-    // Linear scan for min — fine for benchmark (same as existing code)
-    let mi = 0;
-    for (let i = 1; i < op.length; i++) if (op[i].f < op[mi].f) mi = i;
-    const cur = op[mi];
-    op[mi] = op[op.length - 1];
-    op.pop();
+  while (op.size > 0) {
+    maxFrontier = Math.max(maxFrontier, op.size);
+    const cur = op.pop()!;
 
     const ck = pk(cur.r, cur.c);
     if (cl.has(ck)) continue;
     cl.add(ck);
 
     if (cur.r === g.row && cur.c === g.col) {
+      const elapsed = performance.now() - t0;
+      const path = rebuildPath(par, ck);
       return {
         expandedNodes: exp,
         pathCost: cur.g,
-        pathLength: rebuildPathLength(par, ck),
+        truePathCost: measurePathCost(grid, path),
+        pathLength: path.length,
+        maxFrontier,
         foundPath: true,
-        executionTimeMs: performance.now() - t0,
+        executionTimeMs: elapsed,
       };
     }
     exp++;
@@ -279,7 +367,9 @@ function runPQEnhanced(
   return {
     expandedNodes: exp,
     pathCost: null,
+    truePathCost: null,
     pathLength: null,
+    maxFrontier,
     foundPath: false,
     executionTimeMs: performance.now() - t0,
   };
@@ -296,20 +386,26 @@ function runZeroOneBFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   dist.set(sk, 0);
   par.set(sk, null);
   let exp = 0;
+  let maxFrontier = 1;
 
   while (dq.length > 0) {
+    maxFrontier = Math.max(maxFrontier, dq.length);
     const [r, c] = dq.shift()!;
     const ck = pk(r, c);
     if (cl.has(ck)) continue;
     cl.add(ck);
     const d = dist.get(ck)!;
     if (r === g.row && c === g.col) {
+      const elapsed = performance.now() - t0;
+      const path = rebuildPath(par, ck);
       return {
         expandedNodes: exp,
         pathCost: d,
-        pathLength: rebuildPathLength(par, ck),
+        truePathCost: measurePathCost(grid, path),
+        pathLength: path.length,
+        maxFrontier,
         foundPath: true,
-        executionTimeMs: performance.now() - t0,
+        executionTimeMs: elapsed,
       };
     }
     exp++;
@@ -327,7 +423,9 @@ function runZeroOneBFSEnhanced(grid: Grid, mode: 4 | 8): BenchmarkAlgoResult {
   return {
     expandedNodes: exp,
     pathCost: null,
+    truePathCost: null,
     pathLength: null,
+    maxFrontier,
     foundPath: false,
     executionTimeMs: performance.now() - t0,
   };
@@ -595,6 +693,16 @@ export interface BenchmarkProgress {
   currentAlgo: string;
 }
 
+/** Discarded runs that let the JIT compiler settle, so timings are not skewed by cold start. */
+function warmUpRuntime(): void {
+  const grid = generateMap('random', 25, 50, { density: 30, seed: 9001 });
+  for (let i = 0; i < 30; i++) {
+    for (const a of ALL_ALGOS) {
+      runBenchmarkAlgo(grid, { algorithm: a, heuristic: 'manhattan', neighborMode: 4 });
+    }
+  }
+}
+
 export function runScenario(
   scenario: BenchmarkScenario,
   onProgress?: (p: BenchmarkProgress) => void,
@@ -602,6 +710,8 @@ export function runScenario(
   const results: SingleBenchmarkResult[] = [];
   const total = scenario.maps.length * scenario.algoConfigs.length;
   let completed = 0;
+
+  warmUpRuntime();
 
   for (const mapCfg of scenario.maps) {
     // Generate the grid
@@ -616,6 +726,15 @@ export function runScenario(
     const weightedCount = countWeighted(grid);
     const mapMeta: BenchmarkMapMeta = { wallCount, weightedCount };
 
+    // Reference optimum per neighbour mode: Dijkstra provably returns the cheapest path,
+    // so its measured path cost is the baseline every other algorithm is compared against.
+    const refByMode = new Map<4 | 8, number | null>();
+    for (const m of [4, 8] as (4 | 8)[]) {
+      if (!scenario.algoConfigs.some(a => a.neighborMode === m)) continue;
+      const ref = runBenchmarkAlgo(grid, { algorithm: 'dijkstra', heuristic: 'manhattan', neighborMode: m });
+      refByMode.set(m, ref.foundPath ? ref.truePathCost : null);
+    }
+
     for (const algoCfg of scenario.algoConfigs) {
       const result = runBenchmarkAlgo(grid, algoCfg);
       results.push({
@@ -624,6 +743,7 @@ export function runScenario(
         algo: algoCfg,
         result,
         evaluationCategory: scenario.evaluationCategory,
+        refOptimalCost: refByMode.get(algoCfg.neighborMode) ?? null,
       });
       completed++;
       if (onProgress) {
@@ -649,7 +769,8 @@ const CSV_HEADER = [
   'evaluationCategory',
   'generatorType', 'generatorSeed', 'mapRows', 'mapCols', 'density', 'wallCount', 'weightedCount',
   'algorithm', 'heuristic', 'neighborMode', 'swarmWeight',
-  'expandedNodes', 'pathCost', 'pathLength', 'foundPath', 'executionTimeMs',
+  'expandedNodes', 'pathCost', 'truePathCost', 'pathLength', 'maxFrontier',
+  'foundPath', 'executionTimeMs', 'refOptimalCost',
 ].join(',');
 
 function csvRow(r: SingleBenchmarkResult): string {
@@ -668,9 +789,12 @@ function csvRow(r: SingleBenchmarkResult): string {
     r.algo.swarmWeight ?? '',
     r.result.expandedNodes,
     r.result.pathCost ?? '',
+    r.result.truePathCost !== null ? r.result.truePathCost.toFixed(4) : '',
     r.result.pathLength ?? '',
+    r.result.maxFrontier,
     r.result.foundPath,
-    r.result.executionTimeMs.toFixed(3),
+    r.result.executionTimeMs.toFixed(4),
+    r.refOptimalCost !== null ? r.refOptimalCost.toFixed(4) : '',
   ].join(',');
 }
 
@@ -694,8 +818,11 @@ export function toJSON(results: SingleBenchmarkResult[]): object[] {
     swarmWeight: r.algo.swarmWeight ?? null,
     expandedNodes: r.result.expandedNodes,
     pathCost: r.result.pathCost,
+    truePathCost: r.result.truePathCost,
     pathLength: r.result.pathLength,
+    maxFrontier: r.result.maxFrontier,
     foundPath: r.result.foundPath,
-    executionTimeMs: parseFloat(r.result.executionTimeMs.toFixed(3)),
+    executionTimeMs: parseFloat(r.result.executionTimeMs.toFixed(4)),
+    refOptimalCost: r.refOptimalCost,
   }));
 }

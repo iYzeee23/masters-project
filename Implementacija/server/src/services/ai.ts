@@ -6,13 +6,13 @@
 
 // Read env vars lazily (dotenv.config() runs after imports)
 function getEndpoint() {
-  return process.env.GITHUB_MODELS_ENDPOINT || 'https://models.inference.ai.azure.com';
+  return process.env.GITHUB_MODELS_ENDPOINT || 'https://models.github.ai/inference';
 }
 function getToken() {
   return process.env.GITHUB_MODELS_TOKEN || '';
 }
 function getModel() {
-  return process.env.AI_MODEL || 'gpt-4o';
+  return process.env.AI_MODEL || 'openai/gpt-4o';
 }
 
 /**
@@ -20,11 +20,11 @@ function getModel() {
  * Each model has its own daily quota (150/day for Low tier, 50/day for High tier).
  */
 const FALLBACK_MODELS = [
-  'gpt-4o',                  // High tier — 50/day, highest accuracy (85.7%)
-  'Mistral-small-2503',      // Low tier — 150/day, best "best" accuracy (90%)
-  'gpt-4o-mini',             // Low tier — 150/day, good all-rounder
-  'Phi-4',                   // Low tier — 150/day
-  'Meta-Llama-3.1-8B-Instruct', // Low tier — 150/day, fastest
+  'openai/gpt-4o',                   // High tier — 50/day, highest accuracy (85.7%)
+  'mistral-ai/mistral-small-2503',   // Low tier — 150/day, best "best" accuracy (90%)
+  'openai/gpt-4o-mini',              // Low tier — 150/day, good all-rounder
+  'microsoft/Phi-4',                 // Low tier — 150/day
+  'meta/Meta-Llama-3.1-8B-Instruct', // Low tier — 150/day, fastest
 ];
 
 interface ChatMessage {
@@ -121,9 +121,14 @@ export async function callAI(
     return callModel(options.model, messages, maxTokens, temperature);
   }
 
-  // Build fallback chain: primary model first, then others
+  // Build fallback chain: primary model first, then others.
+  // The fallback names are GitHub Models identifiers, so they are only usable
+  // against that endpoint; any other provider gets the configured model alone.
   const primary = getModel();
-  const chain = [primary, ...FALLBACK_MODELS.filter(m => m !== primary)];
+  const isGitHubModels = getEndpoint().includes('models.github.ai');
+  const chain = isGitHubModels
+    ? [primary, ...FALLBACK_MODELS.filter(m => m !== primary)]
+    : [primary];
 
   let lastError: Error | null = null;
   for (const model of chain) {

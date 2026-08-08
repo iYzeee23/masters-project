@@ -71,6 +71,7 @@ Categories: ${VALID_CATEGORIES.join(', ')} (default: all)
 
 Flags:
   --dry-run           Preview scenario sizes, don't run
+  --no-db             Skip MongoDB, export to CSV/JSON only
   --scale N           Multiply seed count by N (default: 1)
   --export-only ID    Re-export an existing batch to CSV/JSON
 
@@ -179,6 +180,7 @@ async function main() {
   }
 
   // Normal run
+  const noDb = args.includes('--no-db');
   const categories = args.filter(a => VALID_CATEGORIES.includes(a));
   const scenarios = categories.length > 0
     ? categories.map(c => buildScenario(c, scale)).filter(Boolean) as BenchmarkScenario[]
@@ -190,9 +192,12 @@ async function main() {
     process.exit(1);
   }
 
-  // Connect to DB
-  await mongoose.connect(MONGODB_URI);
-  console.log(`Connected to MongoDB: ${MONGODB_URI}`);
+  if (!noDb) {
+    await mongoose.connect(MONGODB_URI);
+    console.log(`Connected to MongoDB: ${MONGODB_URI}`);
+  } else {
+    console.log('Running without MongoDB — results are exported to files only.');
+  }
 
   const batchId = generateBatchId();
   console.log(`\n🚀 Batch ID: ${batchId}`);
@@ -220,29 +225,34 @@ async function main() {
     console.log(`  ${scenario.evaluationCategory}: 100% — ${results.length} results in ${Date.now() - st}ms`);
 
     // Bulk insert into MongoDB
-    const docs = results.map(r => ({
-      batchId,
-      evaluationCategory: r.evaluationCategory,
-      generatorType: r.map.generatorType,
-      generatorSeed: r.map.seed,
-      mapRows: r.map.rows,
-      mapCols: r.map.cols,
-      density: r.map.density,
-      wallCount: r.mapMeta.wallCount,
-      weightedCount: r.mapMeta.weightedCount,
-      algorithm: r.algo.algorithm,
-      heuristic: r.algo.heuristic,
-      neighborMode: r.algo.neighborMode,
-      swarmWeight: r.algo.swarmWeight ?? null,
-      expandedNodes: r.result.expandedNodes,
-      pathCost: r.result.pathCost,
-      pathLength: r.result.pathLength,
-      foundPath: r.result.foundPath,
-      executionTimeMs: parseFloat(r.result.executionTimeMs.toFixed(3)),
-    }));
+    if (!noDb) {
+      const docs = results.map(r => ({
+        batchId,
+        evaluationCategory: r.evaluationCategory,
+        generatorType: r.map.generatorType,
+        generatorSeed: r.map.seed,
+        mapRows: r.map.rows,
+        mapCols: r.map.cols,
+        density: r.map.density,
+        wallCount: r.mapMeta.wallCount,
+        weightedCount: r.mapMeta.weightedCount,
+        algorithm: r.algo.algorithm,
+        heuristic: r.algo.heuristic,
+        neighborMode: r.algo.neighborMode,
+        swarmWeight: r.algo.swarmWeight ?? null,
+        expandedNodes: r.result.expandedNodes,
+        pathCost: r.result.pathCost,
+        truePathCost: r.result.truePathCost,
+        pathLength: r.result.pathLength,
+        maxFrontier: r.result.maxFrontier,
+        foundPath: r.result.foundPath,
+        executionTimeMs: parseFloat(r.result.executionTimeMs.toFixed(4)),
+        refOptimalCost: r.refOptimalCost,
+      }));
 
-    await BenchmarkResult.insertMany(docs, { ordered: false });
-    console.log(`  ✓ Saved ${docs.length} records to MongoDB`);
+      await BenchmarkResult.insertMany(docs, { ordered: false });
+      console.log(`  ✓ Saved ${docs.length} records to MongoDB`);
+    }
 
     allResults.push(...results);
   }
@@ -256,12 +266,12 @@ async function main() {
   // Print summary table
   printSummaryTable(allResults);
 
-  // DB stats
-  const totalInDB = await BenchmarkResult.countDocuments();
-  const batchCount = (await BenchmarkResult.distinct('batchId')).length;
-  console.log(`\n📊 DB total: ${totalInDB} results across ${batchCount} batch(es)`);
-
-  await mongoose.disconnect();
+  if (!noDb) {
+    const totalInDB = await BenchmarkResult.countDocuments();
+    const batchCount = (await BenchmarkResult.distinct('batchId')).length;
+    console.log(`\n📊 DB total: ${totalInDB} results across ${batchCount} batch(es)`);
+    await mongoose.disconnect();
+  }
   process.exit(0);
 }
 
@@ -292,10 +302,13 @@ function docsToResults(docs: any[]): SingleBenchmarkResult[] {
     result: {
       expandedNodes: d.expandedNodes,
       pathCost: d.pathCost,
+      truePathCost: d.truePathCost ?? null,
       pathLength: d.pathLength,
+      maxFrontier: d.maxFrontier ?? 0,
       foundPath: d.foundPath,
       executionTimeMs: d.executionTimeMs,
     },
+    refOptimalCost: d.refOptimalCost ?? null,
   }));
 }
 

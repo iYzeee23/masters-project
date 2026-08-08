@@ -168,10 +168,13 @@ router.get('/export', async (req: Request, res: Response) => {
         neighborMode: d.neighborMode,
         swarmWeight: d.swarmWeight,
       },
+      refOptimalCost: d.refOptimalCost ?? null,
       result: {
         expandedNodes: d.expandedNodes,
         pathCost: d.pathCost,
+        truePathCost: d.truePathCost ?? null,
         pathLength: d.pathLength,
+        maxFrontier: d.maxFrontier ?? 0,
         foundPath: d.foundPath,
         executionTimeMs: d.executionTimeMs,
       },
