@@ -38,3 +38,9 @@ build/
 npm-debug.log*
 yarn-error.log
 *.log
+
+# Помоћне скрипте и међукораци при склапању рада
+Pisanje master rada/Rad/*.py
+Pisanje master rada/Rad/osnova.docx
+Pisanje master rada/Rad/popis-slika-i-tabela.md
+Pisanje master rada/Rad/_*
