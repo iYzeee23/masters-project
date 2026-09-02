@@ -39,6 +39,11 @@ npm-debug.log*
 yarn-error.log
 *.log
 
+# Private administrative files and local backups
+Praksa/
+Tehnikalija/
+Pisanje master rada/Rezerva/
+
 # Помоћне скрипте и међукораци при склапању рада
 Pisanje master rada/Rad/*.py
 Pisanje master rada/Rad/osnova.docx
