@@ -3,8 +3,9 @@
 ## Glavni fajlovi
 
 1. **Dokument za učenje:** [PRIPREMA-ZA-ODBRANU.html](Dokument%20za%20ucenje/PRIPREMA-ZA-ODBRANU.html)
-2. **Konačna PowerPoint prezentacija:** [ODBRANA-MASTER-RADA-PREDRAG-PESIC-FINAL-V2.pptx](Prezentacija/ODBRANA-MASTER-RADA-PREDRAG-PESIC-FINAL-V2.pptx)
-3. **Nastavak rada za sledećeg agenta:** [WALKTHROUGH-ZA-SLEDECEG-AGENTA.md](WALKTHROUGH-ZA-SLEDECEG-AGENTA.md)
+2. **Govor za odbranu:** [GOVOR-ZA-ODBRANU.html](GOVOR-ZA-ODBRANU.html)
+3. **Konačna PowerPoint prezentacija:** [ODBRANA-MASTER-RADA-PREDRAG-PESIC-FINAL-V2.pptx](Prezentacija/ODBRANA-MASTER-RADA-PREDRAG-PESIC-FINAL-V2.pptx)
+4. **Nastavak rada za sledećeg agenta:** [WALKTHROUGH-ZA-SLEDECEG-AGENTA.md](WALKTHROUGH-ZA-SLEDECEG-AGENTA.md)
 
 ## Izvori
 

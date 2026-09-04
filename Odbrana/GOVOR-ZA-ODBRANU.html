@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Govor za odbranu master rada - Predrag Pešić</title>
+  <style>
+    :root {
+      --bg: #f4eee6;
+      --paper: #fffdf9;
+      --soft: #eee5da;
+      --ink: #352b26;
+      --muted: #786b62;
+      --line: #ded2c5;
+      --brown: #8b5e50;
+      --deep-brown: #6e473b;
+      --teal: #328c8b;
+      --blue: #4b91b8;
+      --gold: #d49a32;
+      --violet: #8066b5;
+      --coral: #d85b4a;
+      --reading-size: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(139, 94, 80, 0.045) 1px, transparent 1px),
+        var(--bg);
+      background-size: 100% 32px;
+      font-family: Aptos, "Segoe UI", sans-serif;
+      font-size: var(--reading-size);
+      line-height: 1.68;
+      letter-spacing: 0;
+    }
+
+    .progress {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 20;
+      height: 4px;
+      background: var(--line);
+    }
+
+    .progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--brown);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 4px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px max(16px, calc((100vw - 860px) / 2));
+      border-bottom: 1px solid var(--line);
+      background: rgba(248, 243, 236, 0.96);
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toolbar select {
+      min-width: 0;
+      flex: 1;
+      max-width: 420px;
+      padding: 8px 10px;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      font: inherit;
+      font-size: 14px;
+    }
+
+    .toolbar button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      color: var(--deep-brown);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      font: 700 18px/1 Aptos, "Segoe UI", sans-serif;
+      cursor: pointer;
+    }
+
+    .page {
+      width: min(860px, calc(100% - 32px));
+      margin: 28px auto 64px;
+    }
+
+    .hero {
+      padding: 42px 46px;
+      border-top: 6px solid var(--brown);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 10px 32px rgba(78, 55, 44, 0.09);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: 38px;
+      line-height: 1.18;
+    }
+
+    .subtitle {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-left: 3px solid var(--brown);
+      background: var(--soft);
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--deep-brown);
+      font-size: 19px;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .notice {
+      margin: 18px 0 30px;
+      padding: 18px 20px;
+      border-left: 4px solid var(--teal);
+      background: rgba(50, 140, 139, 0.08);
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .notice strong { color: var(--ink); }
+
+    .slide {
+      scroll-margin-top: 76px;
+      margin: 18px 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 5px 18px rgba(78, 55, 44, 0.055);
+    }
+
+    .slide-head {
+      display: grid;
+      grid-template-columns: 54px 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, var(--soft), var(--paper));
+    }
+
+    .number {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--brown);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .slide:nth-of-type(4n + 1) .number { background: var(--blue); }
+    .slide:nth-of-type(4n + 2) .number { background: var(--teal); }
+    .slide:nth-of-type(4n + 3) .number { background: var(--gold); }
+    .slide:nth-of-type(4n + 4) .number { background: var(--violet); }
+
+    h2 {
+      font-size: 25px;
+      line-height: 1.22;
+    }
+
+    .time {
+      color: var(--brown);
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .spoken {
+      padding: 20px 24px 10px;
+    }
+
+    .spoken p {
+      margin: 0 0 15px;
+    }
+
+    .spoken strong {
+      color: var(--deep-brown);
+      font-weight: 800;
+    }
+
+    .cue {
+      margin: 0 24px 20px;
+      padding: 10px 14px;
+      border-left: 3px solid var(--gold);
+      background: rgba(212, 154, 50, 0.09);
+      color: var(--muted);
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    .support {
+      margin-top: 34px;
+      padding: 28px;
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    .support h2 { margin-bottom: 14px; }
+    .support h3 { margin: 24px 0 8px; font-size: 20px; }
+    .support ul { margin: 8px 0; padding-left: 22px; }
+    .support li { margin: 8px 0; }
+
+    footer {
+      padding: 34px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      body { font-size: var(--reading-size); background-size: 100% 28px; }
+      .toolbar { gap: 7px; }
+      .toolbar label { display: none; }
+      .page { width: min(100% - 20px, 860px); margin-top: 14px; }
+      .hero { padding: 28px 22px; }
+      h1 { font-size: 29px; }
+      .stats { grid-template-columns: 1fr; }
+      .slide-head { grid-template-columns: 46px 1fr; padding: 15px 16px; }
+      .number { width: 38px; height: 38px; }
+      h2 { font-size: 21px; }
+      .time { grid-column: 2; }
+      .spoken { padding: 18px 18px 8px; }
+      .cue { margin: 0 18px 18px; }
+      .support { padding: 22px 18px; }
+    }
+
+    @media print {
+      body { background: #fff; font-size: 12pt; }
+      .progress, .toolbar { display: none; }
+      .page { width: 100%; margin: 0; }
+      .hero, .slide { box-shadow: none; break-inside: avoid; }
+      .slide { border-color: #aaa; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+  <nav class="toolbar" aria-label="Navigacija kroz govor">
+    <label for="slide-picker">Idi na:</label>
+    <select id="slide-picker" aria-label="Izaberi slajd">
+      <option value="slajd-1">1. Naslov</option>
+      <option value="slajd-2">2. Problem i cilj</option>
+      <option value="slajd-3">3. Tri nivoa učenja</option>
+      <option value="slajd-4">4. Sistem u radu</option>
+      <option value="slajd-5">5. Arhitektura</option>
+      <option value="slajd-6">6. Sistem događaja</option>
+      <option value="slajd-7">7. Veštačka inteligencija</option>
+      <option value="slajd-8">8. Metodologija</option>
+      <option value="slajd-9">9. Metrike</option>
+      <option value="slajd-10">10. A* i Dijkstra</option>
+      <option value="slajd-11">11. Swarm kompromis</option>
+      <option value="slajd-12">12. Osam algoritama</option>
+      <option value="slajd-13">13. Obim evaluacije</option>
+      <option value="slajd-14">14. Nielsenova evaluacija</option>
+      <option value="slajd-15">15. Pitanja</option>
+    </select>
+    <button id="smaller" type="button" title="Smanji tekst" aria-label="Smanji tekst">A−</button>
+    <button id="larger" type="button" title="Povećaj tekst" aria-label="Povećaj tekst">A+</button>
+  </nav>
+
+  <main class="page">
+    <header class="hero">
+      <h1>Govor za odbranu master rada</h1>
+      <p class="subtitle">Interaktivna vizualizacija grafovskih algoritama za pronalaženje puta sa podrškom veštačke inteligencije</p>
+
+      <div class="stats">
+        <div class="stat"><strong id="word-count">oko 1.300</strong><span>izgovorenih reči</span></div>
+        <div class="stat"><strong id="duration">oko 12:40</strong><span>pri 103 reči/min</span></div>
+        <div class="stat"><strong>15</strong><span>slajdova</span></div>
+      </div>
+    </header>
+
+    <div class="notice">
+      <strong>Napomena za sebe, ne čitati naglas:</strong> Govor je pisan za tempo od oko 103 reči u minutu. Podebljane delove naglasi, a tekst u žutim poljima koristi samo kao režiju. Ne uči svaku rečenicu mehanički. Nauči redosled ideja i ključne prelaze.
+    </div>
+
+    <article class="slide" id="slajd-1">
+      <header class="slide-head">
+        <span class="number">01</span>
+        <h2>Naslov</h2>
+        <span class="time">oko 25 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Dobar dan, poštovana komisijo. Moje ime je <strong>Predrag Pešić</strong>, broj indeksa 2024/3281. Tema mog master rada je interaktivna vizualizacija grafovskih algoritama za pronalaženje puta, sa podrškom veštačke inteligencije.</p>
+        <p>U narednih nekoliko minuta pokazaću šta je bio problem, kako je sistem napravljen i šta je evaluacija pokazala.</p>
+      </div>
+      <p class="cue">Kratka pauza. Pogled ka komisiji, pa prelazak na problem.</p>
+    </article>
+
+    <article class="slide" id="slajd-2">
+      <header class="slide-head">
+        <span class="number">02</span>
+        <h2>Problem i cilj</h2>
+        <span class="time">oko 50 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Kada se algoritmi uče samo kroz pseudokod ili konačan rezultat, teško je steći osećaj <strong>kako</strong> su do rešenja došli. Sama animacija pomaže, ali nije dovoljna.</p>
+        <p>Za stvarno razumevanje potrebno je povezati tri pitanja. Prvo, kojim redom algoritam istražuje mapu? Drugo, zašto se dva algoritma razlikuju na istom problemu? I treće, može li korisnik sam da primeni ono što je video?</p>
+        <p>Cilj rada bio je da se <strong>vizualizacija, poređenje, merenje i aktivno rešavanje</strong> objedine u jednom proverljivom nastavnom alatu.</p>
+      </div>
+      <p class="cue">Naglasiti tri pitanja. Sledeći slajd daje direktan odgovor na njih.</p>
+    </article>
+
+    <article class="slide" id="slajd-3">
+      <header class="slide-head">
+        <span class="number">03</span>
+        <h2>Tri nivoa učenja</h2>
+        <span class="time">oko 50 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Pathfinder ta tri pitanja pretvara u <strong>jedan tok učenja</strong>.</p>
+        <p>U režimu Vizualizacije korisnik prati izvršavanje korak po korak i vidi kako algoritam radi. U režimu Poređenja više algoritama dobija istu mapu i ista merila, pa razlike postaju neposredno vidljive. U Igraonici korisnik sam gradi put, a sistem proverava njegovu ispravnost, cenu i kvalitet.</p>
+        <p>Svaki režim priprema korisnika za sledeći nivo razumevanja. Ideja je da korisnik postepeno pređe <strong>od posmatrača do učesnika</strong>, bez promene okruženja i bez prekidanja priče.</p>
+      </div>
+      <p class="cue">Pokazati rukom sleva nadesno: vidi, uporedi, pokušaj.</p>
+    </article>
+
+    <article class="slide" id="slajd-4">
+      <header class="slide-head">
+        <span class="number">04</span>
+        <h2>Sistem u radu</h2>
+        <span class="time">oko 45 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Ovde se vidi glavni ekran aplikacije. U sredini je mapa, levo legenda, desno metrike, a iznad kontrole izvršavanja.</p>
+        <p>Korisnik može da postavi start i cilj, nacrta zidove ili teren različite cene, izabere algoritam, pa zatim pokrene, pauzira ili premota izvršavanje. Boje odvajaju otvorene i obrađene čvorove od konačnog puta.</p>
+        <p>Važno je da mapa, trag, kontrole i rezultati ostaju u <strong>istom vidnom polju</strong>. Pažnja zato ostaje na ponašanju algoritma, a ne na navigaciji kroz aplikaciju.</p>
+      </div>
+      <p class="cue">Ne nabrajati svako dugme. Pratiti screenshot sleva nadesno.</p>
+    </article>
+
+    <article class="slide" id="slajd-5">
+      <header class="slide-head">
+        <span class="number">05</span>
+        <h2>Arhitektura i tehnologije</h2>
+        <span class="time">oko 65 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Sistem je podeljen na nekoliko jasno odvojenih odgovornosti.</p>
+        <p>Klijentska aplikacija je napravljena u Angular-u i TypeScript-u. Ona prima interakcije, pokreće vizuelni trag i crta mrežu na Canvas-u. Canvas je izabran zato što efikasno prikazuje veliki broj ćelija koje često menjaju stanje.</p>
+        <p>Node.js i Express čine serverski sloj. Server vodi računa o korisnicima, mapama, rezultatima, bodovanju i komunikaciji sa AI servisom. MongoDB čuva trajne podatke, dok se Socket.IO koristi za osvežavanje rang-liste.</p>
+        <p>Na kraju, Python se koristi odvojeno, nakon eksperimenata, za statističku obradu i grafikone. Dakle: <strong>klijent prikazuje, server orkestrira, baza pamti, a Python analizira</strong>.</p>
+      </div>
+      <p class="cue">Ne ulaziti u biblioteke. Zadržati se na odgovornostima slojeva.</p>
+    </article>
+
+    <article class="slide" id="slajd-6">
+      <header class="slide-head">
+        <span class="number">06</span>
+        <h2>Sistem događaja</h2>
+        <span class="time">oko 55 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Najvažnija implementaciona odluka bila je da <strong>algoritam ne crta direktno ekran</strong>.</p>
+        <p>Svaki njegov korak emituje događaj, na primer: čvor je otvoren, čvor je obrađen ili put je pronađen. Ti događaji čine standardizovan trag, a Canvas prikaz taj trag samo reprodukuje.</p>
+        <p>Ovakvo razdvajanje omogućava pokretanje, pauzu, korak napred, korak nazad i premotavanje, bez posebne logike za svaki algoritam. Takođe pojednostavljuje proširivanje sistema: novi algoritam može da koristi isti prikaz čim emituje isti skup događaja.</p>
+        <p>Drugim rečima, algoritam opisuje <strong>šta se dogodilo</strong>, a prikaz odlučuje <strong>kako će se to videti</strong>.</p>
+      </div>
+      <p class="cue">Pratiti dijagram sleva nadesno. Poslednju rečenicu izgovoriti sporije.</p>
+    </article>
+
+    <article class="slide" id="slajd-7">
+      <header class="slide-head">
+        <span class="number">07</span>
+        <h2>Veštačka inteligencija</h2>
+        <span class="time">oko 60 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Uloga veštačke inteligencije može da se sažme pravilom: <strong>program računa, AI objašnjava</strong>.</p>
+        <p>Kada korisnik postavi pitanje, server najpre pokreće odgovarajući algoritam. Program proverava put, računa cenu i izdvaja ključne trenutke. Tek zatim se provereni kontekst šalje jezičkom modelu, koji ga pretvara u razumljivo objašnjenje.</p>
+        <p>Isti obrazac koristi se u Tutoru, Generatoru mapa, Preporuci algoritma i kontekstualnoj pomoći. Na primer, model može da objasni zašto je A* istražio manje čvorova, ali ne određuje sam da li put postoji niti izmišlja njegovu cenu.</p>
+        <p>Tako sistem ostaje izvor proverljivih činjenica, a AI dobija posao za koji je najkorisniji: <strong>tumačenje</strong>.</p>
+      </div>
+      <p class="cue">Naglasiti prvu rečenicu. Ne objašnjavati svaki API poziv.</p>
+    </article>
+
+    <article class="slide" id="slajd-8">
+      <header class="slide-head">
+        <span class="number">08</span>
+        <h2>Metodologija istraživanja</h2>
+        <span class="time">oko 60 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Da bi zaključci bili više od utiska sa jedne lepe animacije, napravljen je poseban <strong>benchmark podsistem</strong>.</p>
+        <p>Tok počinje pitanjem šta se ispituje. Zatim se definiše scenario, pri čemu algoritmi dobijaju istu mapu, isti seed i iste uslove. Svako pokretanje ostavlja sirove podatke, a zaključak se izvodi tek nakon ponavljanja i statističke obrade.</p>
+        <p>Obim je obuhvatio 9.444 simulacije algoritama, 11.250 simulacija bodovanja u Igraonici i 430 poziva ka pet jezičkih modela.</p>
+        <p>Poenta ovih brojeva nije njihova veličina, već to što rezultat ne zavisi od <strong>jednog pažljivo izabranog primera</strong>.</p>
+      </div>
+      <p class="cue">Kod tri broja usporiti. Zatim napraviti jasan prelaz: šta je tačno mereno?</p>
+    </article>
+
+    <article class="slide" id="slajd-9">
+      <header class="slide-head">
+        <span class="number">09</span>
+        <h2>Ključne metrike</h2>
+        <span class="time">oko 55 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Nijedna pojedinačna metrika ne opisuje ceo algoritam.</p>
+        <p><strong>Broj proširenih čvorova</strong> pokazuje koliko je prostora algoritam zaista istražio. <strong>Maksimalni frontijer</strong> govori koliko je kandidata istovremeno čekalo na obradu i daje približnu sliku memorijskog pritiska.</p>
+        <p><strong>Stvarna cena puta</strong> računa se istim pravilom za sve algoritme. Iz nje se dobija <strong>suboptimalnost</strong>, odnosno koliko je pronađeni put skuplji od referentnog optimuma. Nula procenata znači da je pronađen najbolji put.</p>
+        <p>Vreme izvršavanja jeste zabeleženo, ali je dopunska mera, jer više zavisi od hardvera i trenutnog opterećenja.</p>
+      </div>
+      <p class="cue">Svaku metriku povezati sa njenom malom slikom na slajdu.</p>
+    </article>
+
+    <article class="slide" id="slajd-10">
+      <header class="slide-head">
+        <span class="number">10</span>
+        <h2>Glavni rezultat: A* i Dijkstra</h2>
+        <span class="time">oko 55 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Najjasniji rezultat rada je poređenje Dijkstre i algoritma A*.</p>
+        <p>Oba su u zbirnom eksperimentu imala <strong>nultu suboptimalnost</strong>. Dakle, pronalazila su put istog, optimalnog kvaliteta. Razlika je u količini istraživanja.</p>
+        <p>Dijkstra je prosečno proširio oko 584 čvora, a A* oko 219. To znači da je A* obavio <strong>62,5 procenata manje istraživanja</strong>, bez gubitka kvaliteta puta.</p>
+        <p>Razlog je heuristika. Dijkstra zna koliko je dosadašnji put koštao, dok A* tome dodaje procenu pravca do cilja. Ta procena ne menja cilj pretrage, već joj pomaže da izbegne nepotreban rad.</p>
+      </div>
+      <p class="cue">Prvo kvalitet, zatim rad. Ne počinjati procentom bez konteksta.</p>
+    </article>
+
+    <article class="slide" id="slajd-11">
+      <header class="slide-head">
+        <span class="number">11</span>
+        <h2>Drugi rezultat: Swarm kompromis</h2>
+        <span class="time">oko 55 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Drugi rezultat pokazuje šta se dešava kada algoritam još više veruje heuristici.</p>
+        <p>A* je prosečno proširio 218,74 čvora uz nultu suboptimalnost. Swarm je taj broj smanjio na 123,50 čvorova. To je dodatnih <strong>43,5 procenata manje rada</strong> u odnosu na A*.</p>
+        <p>Ta ušteda ipak ima cenu: prosečna suboptimalnost raste na 2,97 procenata. Put je, dakle, u proseku malo skuplji od optimalnog.</p>
+        <p>Ovo je praktičan primer kompromisa. Povećanjem težine heuristike dobijamo brzinu, ali napuštamo strogu garanciju najboljeg puta. Swarm se ovde pokazao kao <strong>umeren kompromis</strong>, a ne kao univerzalna zamena za A*.</p>
+      </div>
+      <p class="cue">Naglasiti odnos 43,5 prema 2,97. Ne predstavljati Swarm kao pobednika.</p>
+    </article>
+
+    <article class="slide" id="slajd-12">
+      <header class="slide-head">
+        <span class="number">12</span>
+        <h2>Osam algoritama, osam kompromisa</h2>
+        <span class="time">oko 75 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Ovi rezultati imaju smisla tek kada se algoritmi posmatraju u kontekstu svojih pretpostavki.</p>
+        <p><strong>BFS</strong> se širi u talasima i nalazi najmanji broj koraka, ali ne razume različite cene terena. <strong>DFS</strong> prati jedan pravac u dubinu i može brzo da nađe neki put, bez garancije kvaliteta.</p>
+        <p><strong>Dijkstra</strong> je pouzdana referenca za najnižu cenu. <strong>A*</strong> zadržava tu optimalnost uz usmeravanje heuristikom. <strong>Greedy</strong> gotovo samo juri ka cilju, pa često radi najmanje, ali nosi veći rizik lošeg puta.</p>
+        <p><strong>Swarm</strong> pravi umeren kompromis između rada i cene, dok je <strong>Convergent Swarm</strong> agresivniji i više žrtvuje kvalitet radi usmeravanja. Konačno, <strong>0-1 BFS</strong> je veoma efikasan specijalista, ali samo kada su težine zaista nula ili jedan.</p>
+        <p>Zato izbor algoritma zapravo znači izbor prioriteta: garancija, brzina, memorija ili poseban model problema.</p>
+      </div>
+      <p class="cue">Ritam: dve grupe po dva algoritma, zatim tri heuristička i specijalista. Ne praviti osam odvojenih mini-predavanja.</p>
+    </article>
+
+    <article class="slide" id="slajd-13">
+      <header class="slide-head">
+        <span class="number">13</span>
+        <h2>Obim evaluacije</h2>
+        <span class="time">oko 50 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Evaluacija zato nije obuhvatila samo algoritamski benchmark, već četiri nivoa sistema.</p>
+        <p>Algoritmi su provereni kroz 9.444 ponovljive simulacije. Bodovanje u Igraonici provereno je kroz 11.250 simuliranih profila. AI sloj je testiran kroz 430 poziva ka pet modela, sa merenjem tačnosti, formata odgovora i odziva. Interfejs je sistematski pregledan prema deset Nielsenovih heuristika.</p>
+        <p>Ove četiri perspektive proveravaju različite stvari: <strong>ponašanje algoritama, kvalitet bodovanja, pouzdanost AI sloja i upotrebljivost interfejsa</strong>. Tek zajedno daju potpuniju sliku sistema.</p>
+      </div>
+      <p class="cue">Ne ponavljati metodologiju. Ovde je poenta širina evaluacije.</p>
+    </article>
+
+    <article class="slide" id="slajd-14">
+      <header class="slide-head">
+        <span class="number">14</span>
+        <h2>Nielsenova evaluacija</h2>
+        <span class="time">oko 65 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Nielsenovi principi nisu ostali samo spisak naziva. Svaki je povezan sa konkretnim elementom aplikacije.</p>
+        <p>Status sistema vidi se kroz trenutno stanje, korak i metrike. Mapa, zidovi, start i cilj odgovaraju pojmovima iz stvarnog sveta. Korisnik ima kontrolu kroz pauzu, korak, povratak i reset, dok isti raspored, boje i termini obezbeđuju konzistentnost.</p>
+        <p>Greške se sprečavaju zaštitom ključnih čvorova i proverom putanje. Stalna legenda i vidljive metrike smanjuju potrebu za pamćenjem. Brzina, premotavanje i generatori daju fleksibilnost, a Canvas ostaje glavni vizuelni fokus.</p>
+        <p>Jasne poruke i prikaz bodovanja pomažu oporavku od greške, dok vodič od 17 koraka i AI Tutor pružaju pomoć u kontekstu. Tako je svih <strong>deset heuristika</strong> vezano za nešto što se u interfejsu može neposredno proveriti.</p>
+      </div>
+      <p class="cue">Ne čitati tabelu red po red. Govoriti u četiri povezane grupe i pratiti pogledom kolone.</p>
+    </article>
+
+    <article class="slide" id="slajd-15">
+      <header class="slide-head">
+        <span class="number">15</span>
+        <h2>Hvala na pažnji</h2>
+        <span class="time">oko 20 sekundi</span>
+      </header>
+      <div class="spoken">
+        <p>Za kraj, doprinos rada je povezivanje onoga što korisnik može da <strong>vidi, izmeri, pokuša i razume</strong> u jednom proverljivom sistemu.</p>
+        <p>Hvala vam na pažnji. Spreman sam za vaša pitanja.</p>
+      </div>
+      <p class="cue">Završiti odlučno. Ne dodavati „to bi bilo to”. Napraviti pauzu i pogledati komisiju.</p>
+    </article>
+
+    <section class="support">
+      <h2>Strategije za vreme</h2>
+
+      <h3>Ako govor ide prebrzo</h3>
+      <ul>
+        <li>Na slajdu 4 kratko pokaži legendu, kontrole i panel sa metrikama.</li>
+        <li>Na slajdu 6 dodaj primer: „otvoren čvor” menja boju, ali algoritam ne zna ništa o boji.</li>
+        <li>Na slajdu 10 objasni analogiju: Dijkstra zna cenu, a A* uz cenu dobija i kompas.</li>
+      </ul>
+
+      <h3>Ako govor ide presporo</h3>
+      <ul>
+        <li>Na slajdu 5 preskoči pojedinačne tehnologije i izgovori samo završnu rečenicu o odgovornostima.</li>
+        <li>Na slajdu 12 spoji Swarm i Convergent Swarm u jednu rečenicu.</li>
+        <li>Na slajdu 14 izgovori prvi i poslednji pasus, a sredinu sažmi kao: „svaki princip je vezan za konkretnu kontrolu ili povratnu informaciju”.</li>
+      </ul>
+
+      <h3>Tri sidra ako se izgubi tok</h3>
+      <ul>
+        <li><strong>Problem:</strong> sama animacija nije dovoljna za razumevanje.</li>
+        <li><strong>Rešenje:</strong> vizualizacija, poređenje, aktivni pokušaj i merljivi rezultati.</li>
+        <li><strong>Zaključak:</strong> najbolji algoritam ne postoji van konteksta problema.</li>
+      </ul>
+    </section>
+
+    <footer>
+      Predrag Pešić · Master rad · Verzija usklađena sa prezentacijom FINAL-V2
+    </footer>
+  </main>
+
+  <script>
+    const root = document.documentElement;
+    const picker = document.getElementById("slide-picker");
+    const progress = document.getElementById("progress-bar");
+    const spokenText = Array.from(document.querySelectorAll(".spoken"))
+      .map(element => element.textContent.trim())
+      .join(" ");
+    const words = spokenText.match(/[\p{L}\p{N}*]+(?:[-–][\p{L}\p{N}*]+)*/gu) || [];
+    const minutes = words.length / 103;
+    const wholeMinutes = Math.floor(minutes);
+    const seconds = Math.round((minutes - wholeMinutes) * 60);
+
+    document.getElementById("word-count").textContent = words.length.toLocaleString("sr-RS");
+    document.getElementById("duration").textContent = `oko ${wholeMinutes}:${String(seconds).padStart(2, "0")}`;
+
+    picker.addEventListener("change", () => {
+      document.getElementById(picker.value)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    function changeSize(delta) {
+      const current = Number.parseFloat(getComputedStyle(root).getPropertyValue("--reading-size"));
+      root.style.setProperty("--reading-size", `${Math.min(24, Math.max(15, current + delta))}px`);
+    }
+
+    document.getElementById("smaller").addEventListener("click", () => changeSize(-1));
+    document.getElementById("larger").addEventListener("click", () => changeSize(1));
+
+    function updateProgress() {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      const percentage = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+      progress.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+    }
+
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+  </script>
+</body>
+</html>
