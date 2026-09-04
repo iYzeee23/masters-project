@@ -1,0 +1,12 @@
+{
+  "name": "master-odbrana-prezentacija",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generator PowerPoint prezentacije za odbranu master rada",
+  "scripts": {
+    "generate": "node generate-presentation-final.cjs"
+  },
+  "dependencies": {
+    "pptxgenjs": "4.0.1"
+  }
+}

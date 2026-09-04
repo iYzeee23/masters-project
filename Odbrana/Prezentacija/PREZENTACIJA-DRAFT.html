@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Draft prezentacije master rada o interaktivnoj vizualizaciji algoritama za pronalaženje puta sa AI podrškom.">
+  <title>Prezentacija master rada · Predrag Pešić</title>
+  <style>
+    :root {
+      --ivory: #f7f2e9;
+      --paper: #fffdf8;
+      --ink: #211d1a;
+      --muted: #716861;
+      --line: #d9cec1;
+      --espresso: #71493d;
+      --coral: #d75a46;
+      --teal: #187f84;
+      --cyan: #58c4d7;
+      --gold: #d79524;
+      --violet: #7359bf;
+      --green: #3b8f47;
+      --slide-width: 1600px;
+      --slide-height: 900px;
+      --shadow: 0 24px 70px rgba(40, 29, 23, .2);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(113, 73, 61, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(113, 73, 61, .045) 1px, transparent 1px),
+        #e9e2d8;
+      background-size: 28px 28px;
+      font-family: Candara, Calibri, sans-serif;
+      overflow: hidden;
+    }
+
+    button { font: inherit; }
+
+    .deck-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px 18px 44px;
+    }
+
+    .stage-viewport {
+      position: relative;
+      width: var(--slide-width);
+      height: var(--slide-height);
+      transform-origin: center center;
+    }
+
+    .stage {
+      position: relative;
+      width: var(--slide-width);
+      height: var(--slide-height);
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      width: var(--slide-width);
+      height: var(--slide-height);
+      padding: 72px 84px 68px;
+      overflow: hidden;
+      background: var(--paper);
+      isolation: isolate;
+    }
+
+    .slide.active {
+      display: block;
+      animation: slide-in .34s ease-out both;
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide::after {
+      content: attr(data-section);
+      position: absolute;
+      top: 38px;
+      right: 54px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1, h2, .serif {
+      font-family: Georgia, Cambria, serif;
+      font-weight: 500;
+    }
+
+    h2 {
+      max-width: 1220px;
+      margin-bottom: 42px;
+      font-size: 58px;
+      line-height: 1.08;
+    }
+
+    .eyebrow {
+      margin-bottom: 16px;
+      color: var(--espresso);
+      font-size: 17px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .accent { color: var(--coral); }
+    .teal { color: var(--teal); }
+    .muted { color: var(--muted); }
+
+    .slide-number {
+      position: absolute;
+      right: 54px;
+      bottom: 34px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .speaker-notes { display: none; }
+
+    /* 01 · Naslov */
+    .title-slide {
+      display: none;
+      align-items: flex-end;
+      padding-bottom: 86px;
+      color: #261d19;
+      background-image: url("../../Pisanje master rada/Slike/snimak-5-1-1.png");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .title-slide.active { display: flex; }
+
+    .title-slide::before,
+    .closing-slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: rgba(255, 251, 244, .88);
+    }
+
+    .title-slide::after { content: ""; }
+
+    .title-block {
+      max-width: 1270px;
+      border-left: 12px solid var(--coral);
+      padding-left: 38px;
+    }
+
+    .title-block h1 {
+      margin-bottom: 28px;
+      font-size: 66px;
+      line-height: 1.07;
+    }
+
+    .title-meta {
+      display: flex;
+      gap: 54px;
+      color: #433731;
+      font-size: 20px;
+    }
+
+    .title-meta strong { display: block; margin-bottom: 4px; }
+    .institution { position: absolute; top: 62px; left: 84px; font-size: 18px; font-weight: 700; }
+
+    /* 02 · Problem */
+    .problem-slide {
+      background:
+        linear-gradient(rgba(33, 29, 26, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(33, 29, 26, .045) 1px, transparent 1px),
+        var(--paper);
+      background-size: 42px 42px;
+    }
+
+    .problem-statement {
+      max-width: 1240px;
+      margin: 84px 0 80px;
+      font-family: Georgia, Cambria, serif;
+      font-size: 56px;
+      line-height: 1.18;
+    }
+
+    .problem-equations {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+    }
+
+    .problem-equation {
+      min-width: 0;
+      padding: 30px 36px 0 0;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .problem-equation + .problem-equation {
+      padding-left: 36px;
+      border-left: 1px solid var(--line);
+    }
+
+    .problem-equation strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--espresso);
+      font-size: 32px;
+    }
+
+    /* 03 · Tri režima */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      height: 610px;
+    }
+
+    .mode-panel {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #eee5da;
+    }
+
+    .mode-panel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .mode-panel:nth-child(1) img { object-position: 48% center; }
+    .mode-panel:nth-child(2) img { object-position: 55% center; }
+    .mode-panel:nth-child(3) img { object-position: 48% center; }
+
+    .mode-label {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      padding: 16px 18px;
+      color: #fff;
+      background: rgba(39, 27, 22, .86);
+    }
+
+    .mode-label strong { display: block; font-size: 28px; }
+    .mode-label span { color: #e9ded6; font-size: 17px; }
+
+    /* 04 · Algoritmi */
+    .priority-spectrum {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      margin-top: 80px;
+      border-block: 1px solid var(--line);
+    }
+
+    .priority-item {
+      min-width: 0;
+      padding: 38px 28px;
+      text-align: center;
+    }
+
+    .priority-item + .priority-item { border-left: 1px solid var(--line); }
+    .priority-name { display: block; margin-bottom: 20px; color: var(--muted); font-size: 21px; font-weight: 700; }
+    .priority-formula { display: block; font-family: Georgia, Cambria, serif; font-size: 62px; }
+    .priority-caption { display: block; margin-top: 16px; color: var(--muted); font-size: 17px; }
+    .priority-item:nth-child(1) { box-shadow: inset 0 7px 0 var(--green); }
+    .priority-item:nth-child(2) { box-shadow: inset 0 7px 0 var(--teal); }
+    .priority-item:nth-child(3) { box-shadow: inset 0 7px 0 var(--gold); }
+    .priority-item:nth-child(4) { box-shadow: inset 0 7px 0 var(--coral); }
+
+    .algorithm-strip {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 48px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* 05 · Arhitektura */
+    .execution-lanes {
+      display: grid;
+      gap: 28px;
+      margin-top: 38px;
+    }
+
+    .execution-lane {
+      display: grid;
+      grid-template-columns: 190px 1fr 78px 1fr 78px 1fr;
+      align-items: center;
+      min-height: 160px;
+      padding: 24px 30px;
+      border-block: 1px solid var(--line);
+    }
+
+    .lane-label { font-family: Georgia, Cambria, serif; font-size: 31px; }
+    .lane-node { padding: 22px 16px; border-bottom: 5px solid var(--teal); text-align: center; font-size: 22px; font-weight: 700; }
+    .execution-lane.server .lane-node { border-color: var(--coral); }
+    .lane-arrow { color: var(--muted); text-align: center; font-size: 31px; }
+
+    .protocol-line {
+      display: flex;
+      justify-content: center;
+      gap: 34px;
+      margin-top: 38px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .protocol-line strong { color: var(--ink); }
+
+    /* 06 · Metodologija */
+    .method-layout {
+      display: grid;
+      grid-template-columns: 1.05fr 1.3fr;
+      gap: 90px;
+      align-items: center;
+      height: 620px;
+    }
+
+    .hero-metric {
+      padding-right: 50px;
+      border-right: 1px solid var(--line);
+    }
+
+    .hero-metric strong {
+      display: block;
+      color: var(--espresso);
+      font-family: Georgia, Cambria, serif;
+      font-size: 130px;
+      font-weight: 500;
+      line-height: .9;
+    }
+
+    .hero-metric span { display: block; margin-top: 24px; font-size: 30px; }
+
+    .method-list { display: grid; gap: 26px; }
+    .method-row { display: grid; grid-template-columns: 76px 1fr; gap: 22px; align-items: center; }
+    .method-index { color: var(--coral); font-family: Georgia, Cambria, serif; font-size: 42px; }
+    .method-row strong { display: block; margin-bottom: 3px; font-size: 24px; }
+    .method-row span { color: var(--muted); font-size: 19px; }
+
+    /* 07 · A* */
+    .bars-layout {
+      display: grid;
+      grid-template-columns: 1.65fr .75fr;
+      gap: 90px;
+      align-items: end;
+      margin-top: 35px;
+    }
+
+    .bar-chart { display: grid; gap: 38px; }
+    .bar-row { display: grid; grid-template-columns: 145px 1fr 120px; gap: 18px; align-items: center; }
+    .bar-label { font-size: 24px; font-weight: 700; }
+    .bar-track { height: 72px; background: #ede6dc; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--espresso); }
+    .bar-row.astar .bar-fill { width: 37.5%; background: var(--teal); }
+    .bar-row.dijkstra .bar-fill { width: 100%; }
+    .bar-value { font-family: Georgia, Cambria, serif; font-size: 38px; text-align: right; }
+    .chart-caption { margin: 18px 138px 0 163px; color: var(--muted); font-size: 17px; text-align: center; }
+
+    .result-callout { padding-left: 42px; border-left: 8px solid var(--coral); }
+    .result-callout strong { display: block; color: var(--coral); font-family: Georgia, Cambria, serif; font-size: 92px; font-weight: 500; line-height: .92; }
+    .result-callout span { display: block; margin-top: 20px; font-size: 24px; line-height: 1.25; }
+    .same-quality { margin-top: 48px; color: var(--teal); font-size: 23px; font-weight: 800; }
+
+    /* 08 · Kompromis */
+    .tradeoff-layout {
+      display: grid;
+      grid-template-columns: .72fr 1.45fr;
+      gap: 46px;
+      align-items: center;
+      height: 690px;
+    }
+
+    .tradeoff-copy h2 { margin-bottom: 38px; }
+    .tradeoff-fact { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); }
+    .tradeoff-fact strong { display: block; color: var(--teal); font-size: 36px; }
+    .tradeoff-fact span { display: block; margin-top: 7px; color: var(--muted); font-size: 20px; line-height: 1.3; }
+    .tradeoff-figure { height: 650px; margin: 0; overflow: hidden; background: #fff; border: 1px solid var(--line); }
+    .tradeoff-figure img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* 09 · Neočekivani nalazi */
+    .finding-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      margin-top: 76px;
+      border-block: 1px solid var(--line);
+    }
+
+    .finding {
+      min-width: 0;
+      min-height: 370px;
+      padding: 44px 38px;
+    }
+
+    .finding + .finding { border-left: 1px solid var(--line); }
+    .finding strong { display: block; margin-bottom: 24px; font-family: Georgia, Cambria, serif; font-size: 70px; font-weight: 500; }
+    .finding:nth-child(1) strong { color: var(--coral); }
+    .finding:nth-child(2) strong { color: var(--teal); }
+    .finding:nth-child(3) strong { color: var(--gold); }
+    .finding h3 { margin-bottom: 14px; font-size: 27px; }
+    .finding p { color: var(--muted); font-size: 20px; line-height: 1.38; }
+    .finding-conclusion { margin-top: 34px; font-family: Georgia, Cambria, serif; font-size: 28px; text-align: center; }
+
+    /* 10 · AI */
+    .ai-slide { padding-right: 0; }
+    .ai-layout { display: grid; grid-template-columns: .8fr 1.25fr; gap: 52px; height: 100%; align-items: center; }
+    .ai-copy { padding-bottom: 30px; }
+    .ai-rule { margin: 52px 0 42px; font-family: Georgia, Cambria, serif; font-size: 52px; line-height: 1.16; }
+    .ai-rule strong { color: var(--coral); font-weight: 500; }
+    .ai-proof { padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 21px; line-height: 1.35; }
+    .ai-proof b { color: var(--teal); }
+    .ai-image { height: 900px; margin: -72px 0 -68px; overflow: hidden; border-left: 1px solid var(--line); }
+    .ai-image img { width: 100%; height: 100%; object-fit: cover; object-position: 32% center; }
+
+    /* 11 · Obim evaluacije */
+    .evaluation-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      margin-top: 80px;
+    }
+
+    .evaluation-item { min-height: 245px; padding: 32px 24px; border-top: 7px solid var(--espresso); background: #f4eee6; }
+    .evaluation-item:nth-child(2) { border-color: var(--gold); }
+    .evaluation-item:nth-child(3) { border-color: var(--violet); }
+    .evaluation-item:nth-child(4) { border-color: var(--teal); }
+    .evaluation-item strong { display: block; font-family: Georgia, Cambria, serif; font-size: 54px; font-weight: 500; }
+    .evaluation-item span { display: block; margin-top: 13px; color: var(--muted); font-size: 20px; line-height: 1.28; }
+    .evaluation-boundary { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 62px; }
+    .evaluation-boundary div { padding-top: 20px; border-top: 1px solid var(--line); font-size: 20px; line-height: 1.35; }
+    .evaluation-boundary strong { color: var(--espresso); }
+
+    /* 12 · Doprinos */
+    .contribution-slide { background: var(--ink); color: #fffaf3; }
+    .contribution-slide::after { color: #b6aaa1; }
+    .contribution-slide .eyebrow { color: #e8a68f; }
+    .contribution-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 70px;
+      margin-top: 110px;
+    }
+
+    .contribution { min-width: 0; }
+    .contribution-word { display: block; margin-bottom: 28px; font-family: Georgia, Cambria, serif; font-size: 78px; }
+    .contribution:nth-child(1) .contribution-word { color: #75d0dc; }
+    .contribution:nth-child(2) .contribution-word { color: #efbd5f; }
+    .contribution:nth-child(3) .contribution-word { color: #ef8f78; }
+    .contribution p { max-width: 380px; color: #cfc4bc; font-size: 22px; line-height: 1.4; }
+    .contribution-summary { position: absolute; left: 84px; bottom: 74px; font-size: 25px; }
+
+    /* 13 · Kraj */
+    .closing-slide {
+      display: none;
+      align-items: center;
+      background-image: url("../../Pisanje master rada/Slike/snimak-5-3-1.png");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .closing-slide.active { display: flex; }
+    .closing-slide::before { background: rgba(255, 251, 244, .91); }
+    .closing-slide::after { content: ""; }
+    .closing-content { max-width: 1240px; }
+    .closing-content h2 { max-width: 1150px; margin-bottom: 34px; font-size: 72px; }
+    .closing-content p { max-width: 900px; color: var(--muted); font-size: 29px; line-height: 1.4; }
+    .questions { margin-top: 70px; color: var(--espresso); font-family: Georgia, Cambria, serif; font-size: 35px; }
+
+    /* Kontrole */
+    .controls {
+      position: fixed;
+      right: 18px;
+      bottom: 14px;
+      display: flex;
+      gap: 7px;
+      z-index: 30;
+    }
+
+    .control-button {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      color: #fff;
+      background: rgba(33, 29, 26, .86);
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .control-button:hover,
+    .control-button:focus-visible { background: var(--teal); outline: 3px solid rgba(24, 127, 132, .25); }
+    .control-button:disabled { opacity: .32; cursor: default; }
+
+    .counter {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 30;
+      color: #564b45;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 4px;
+      z-index: 31;
+      background: rgba(33, 29, 26, .12);
+    }
+
+    .progress span { display: block; width: 0; height: 100%; background: var(--coral); transition: width .25s ease; }
+
+    .notes-panel {
+      position: fixed;
+      left: 18px;
+      right: 18px;
+      bottom: 62px;
+      z-index: 35;
+      max-height: 220px;
+      padding: 22px 26px;
+      overflow: auto;
+      color: #f8f3ed;
+      background: rgba(33, 29, 26, .96);
+      border-top: 5px solid var(--gold);
+      box-shadow: var(--shadow);
+    }
+
+    .notes-panel[hidden] { display: none; }
+    .notes-panel strong { color: #efbd5f; }
+    .notes-panel p { margin: 8px 0 0; font-size: 18px; line-height: 1.4; }
+
+    .overview {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      padding: 48px;
+      overflow: auto;
+      color: #fff;
+      background: rgba(27, 23, 21, .97);
+    }
+
+    .overview[hidden] { display: none; }
+    .overview-header { display: flex; justify-content: space-between; align-items: center; max-width: 1360px; margin: 0 auto 28px; }
+    .overview-header h2 { margin: 0; font-size: 36px; }
+    .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1360px; margin: 0 auto; }
+    .overview-card { position: relative; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; border: 2px solid transparent; background: #fff; cursor: pointer; }
+    .overview-card:hover, .overview-card:focus-visible { border-color: var(--gold); outline: none; }
+    .overview-preview { width: 1600px; height: 900px; transform: scale(.2); transform-origin: top left; pointer-events: none; }
+    .overview-preview .slide { position: relative; display: block; }
+
+    @media (max-width: 720px) {
+      .deck-shell { padding-inline: 8px; }
+      .controls { right: 8px; }
+      .counter { left: 8px; }
+      .overview { padding: 24px 14px; }
+      .overview-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide.active { animation: none; }
+      .progress span { transition: none; }
+    }
+
+    @media print {
+      @page { size: 13.333in 7.5in; margin: 0; }
+      html, body { width: auto; min-height: auto; background: #fff; overflow: visible; }
+      .deck-shell { display: block; min-height: 0; padding: 0; }
+      .stage-viewport, .stage { width: 13.333in !important; height: auto !important; transform: none !important; box-shadow: none; overflow: visible; }
+      .slide, .title-slide, .closing-slide {
+        position: relative;
+        display: block !important;
+        width: 13.333in;
+        height: 7.5in;
+        page-break-after: always;
+        break-after: page;
+        zoom: .768;
+      }
+      .controls, .counter, .progress, .notes-panel, .overview { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck-shell">
+    <div class="stage-viewport" id="stageViewport">
+      <div class="stage" id="stage" aria-live="polite">
+        <section class="slide title-slide active" data-title="Naslov" data-time="0:30" aria-label="Slajd 1 od 13">
+          <div class="institution">Univerzitet u Beogradu · Elektrotehnički fakultet</div>
+          <div class="title-block">
+            <p class="eyebrow">Master rad</p>
+            <h1>Interaktivna vizualizacija grafovskih algoritama za pronalaženje puta sa podrškom veštačke inteligencije</h1>
+            <div class="title-meta">
+              <div><strong>Predrag Pešić</strong><span>2024/3281</span></div>
+              <div><strong>Mentor</strong><span>prof. dr Marija Punt</span></div>
+              <div><strong>Beograd</strong><span>2026.</span></div>
+            </div>
+          </div>
+          <aside class="speaker-notes">Otvoriti jednom rečenicom: rad se bavi time kako apstraktno ponašanje algoritama učiniti vidljivim, merljivim i dovoljno jasnim da korisnik može sam da ga istraži. Ne nabrajati tehnologije na početku.</aside>
+        </section>
+
+        <section class="slide problem-slide" data-title="Problem" data-time="0:55" data-section="Problem" aria-label="Slajd 2 od 13">
+          <p class="eyebrow">Polazna tačka</p>
+          <p class="problem-statement">Dva algoritma mogu pronaći isti cilj, a da pritom urade <span class="accent">potpuno različit posao</span>.</p>
+          <div class="problem-equations">
+            <div class="problem-equation"><strong>Pseudokod ≠ intuicija</strong>Tekst opisuje korake, ali ne gradi osećaj za ponašanje.</div>
+            <div class="problem-equation"><strong>Jedan rezultat ≠ poređenje</strong>Konačan put ne pokazuje koliko je prostora istraženo.</div>
+            <div class="problem-equation"><strong>Gledanje ≠ učenje</strong>Korisnik mora da predviđa, pokušava i dobije povratnu informaciju.</div>
+          </div>
+          <span class="slide-number">02</span>
+          <aside class="speaker-notes">Objasniti mali primer: ako i Dijkstra i A* nađu put cene 20, krajnji rezultat izgleda isto. Ali ako Dijkstra obradi 100 polja, a A* 35, njihovo ponašanje nije isto. Zbog toga samo kod ili samo konačan put nisu dovoljni za razvijanje intuicije.</aside>
+        </section>
+
+        <section class="slide" data-title="Rešenje" data-time="1:00" data-section="Rešenje" aria-label="Slajd 3 od 13">
+          <p class="eyebrow">Tri režima, jedna priča</p>
+          <h2>Od posmatranja do <span class="teal">aktivnog razumevanja</span>.</h2>
+          <div class="mode-grid">
+            <div class="mode-panel">
+              <img src="../../Pisanje master rada/Slike/snimak-5-2-2.png" alt="Vizualizacija algoritma korak po korak">
+              <div class="mode-label"><strong>Vidi</strong><span>izvršavanje korak po korak</span></div>
+            </div>
+            <div class="mode-panel">
+              <img src="../../Pisanje master rada/Slike/snimak-5-3-1.png" alt="Uporedni prikaz više algoritama">
+              <div class="mode-label"><strong>Uporedi</strong><span>iste uslove i iste metrike</span></div>
+            </div>
+            <div class="mode-panel">
+              <img src="../../Pisanje master rada/Slike/snimak-5-4-2.png" alt="Ocena korisničkog rešenja u Igraonici">
+              <div class="mode-label"><strong>Pokušaj</strong><span>sopstveni put i povratna informacija</span></div>
+            </div>
+          </div>
+          <span class="slide-number">03</span>
+          <aside class="speaker-notes">Predstaviti tri režima kao progresiju, ne kao spisak funkcija. Vizualizacija odgovara na pitanje „šta se upravo dogodilo“, poređenje na „koji postupak je uradio manje posla“, a Igraonica uvodi aktivno učenje: korisnik sam konstruiše put i dobija ocenu u odnosu na algoritamsko rešenje.</aside>
+        </section>
+
+        <section class="slide" data-title="Kako algoritmi biraju" data-time="1:10" data-section="Algoritmi" aria-label="Slajd 4 od 13">
+          <p class="eyebrow">Ključna ideja algoritama</p>
+          <h2>Isti cilj. Različit <span class="accent">kriterijum izbora</span>.</h2>
+          <div class="priority-spectrum">
+            <div class="priority-item"><span class="priority-name">Dijkstra</span><span class="priority-formula">g</span><span class="priority-caption">dosadašnja cena</span></div>
+            <div class="priority-item"><span class="priority-name">A*</span><span class="priority-formula">g + h</span><span class="priority-caption">cena + procena</span></div>
+            <div class="priority-item"><span class="priority-name">Swarm</span><span class="priority-formula">g + w·h</span><span class="priority-caption">pojačana procena</span></div>
+            <div class="priority-item"><span class="priority-name">Greedy</span><span class="priority-formula">h</span><span class="priority-caption">samo procena</span></div>
+          </div>
+          <div class="algorithm-strip"><span>BFS</span><span>DFS</span><span>Dijkstra</span><span>A*</span><span>Greedy</span><span>Swarm</span><span>Convergent Swarm</span><span>0–1 BFS</span></div>
+          <span class="slide-number">04</span>
+          <aside class="speaker-notes">Uvesti g kao poznatu cenu od starta i h kao procenu do cilja. Dijkstra veruje samo pređenom putu. A* kombinuje poznato i procenjeno. Swarm povećava uticaj procene, pa obično radi manje, ali može izgubiti optimalnost. Greedy gleda samo cilj. Ostale algoritme pomenuti kao deo skupa od osam, bez pojedinačnog predavanja.</aside>
+        </section>
+
+        <section class="slide" data-title="Arhitektura" data-time="1:05" data-section="Implementacija" aria-label="Slajd 5 od 13">
+          <p class="eyebrow">Važna implementaciona odluka</p>
+          <h2>Algoritam računa. Događaji <span class="teal">pričaju šta se desilo</span>.</h2>
+          <div class="execution-lanes">
+            <div class="execution-lane browser">
+              <div class="lane-label">Pregledač</div><div class="lane-node">Algoritam</div><div class="lane-arrow">→</div><div class="lane-node">trag događaja</div><div class="lane-arrow">→</div><div class="lane-node">Canvas animacija</div>
+            </div>
+            <div class="execution-lane server">
+              <div class="lane-label">Server</div><div class="lane-node">Algoritam</div><div class="lane-arrow">→</div><div class="lane-node">metrike</div><div class="lane-arrow">→</div><div class="lane-node">AI kontekst / benchmark</div>
+            </div>
+          </div>
+          <div class="protocol-line"><span><strong>Zajednički ugovor:</strong> init · step · result · trace</span><span><strong>REST:</strong> podaci i zahtevi</span><span><strong>Socket.IO:</strong> signal rang-liste</span></div>
+          <span class="slide-number">05</span>
+          <aside class="speaker-notes">Naglasiti da interaktivna animacija ne čeka server za svaki korak. Algoritam se izvrši u pregledaču i proizvede standardizovan trag događaja, a prikaz taj trag reprodukuje. Server ima svoje izvođenje za merenja, Playground proveru i AI kontekst. REST prenosi zahteve i rezultate; Socket.IO se koristi usko, samo da javi da je rang-lista promenjena.</aside>
+        </section>
+
+        <section class="slide" data-title="Metodologija" data-time="1:00" data-section="Evaluacija" aria-label="Slajd 6 od 13">
+          <p class="eyebrow">Od demonstracije do eksperimenta</p>
+          <h2>Isti uslovi. Mnogo ponavljanja. <span class="accent">Više merila.</span></h2>
+          <div class="method-layout">
+            <div class="hero-metric"><strong>9.444</strong><span>simulacije algoritama</span></div>
+            <div class="method-list">
+              <div class="method-row"><span class="method-index">01</span><div><strong>Iste mape i fiksirano seme</strong><span>svaki algoritam rešava isti problem</span></div></div>
+              <div class="method-row"><span class="method-index">02</span><div><strong>7 tipova × 3 gustine</strong><span>otvoreno polje, lavirint, teren, usko grlo...</span></div></div>
+              <div class="method-row"><span class="method-index">03</span><div><strong>Tri grupe metrika</strong><span>obrada, kvalitet puta i memorijski otisak</span></div></div>
+              <div class="method-row"><span class="method-index">04</span><div><strong>Dijkstra kao referenca</strong><span>suboptimalnost meri odstupanje od najjeftinijeg puta</span></div></div>
+            </div>
+          </div>
+          <span class="slide-number">06</span>
+          <aside class="speaker-notes">Objasniti zašto nije dovoljno vreme u milisekundama: zavisi od računara i trenutnog opterećenja. Broj proširenih čvorova opisuje algoritamski rad i lakše se prenosi na drugo okruženje. Kvalitet se meri zajedničkom cenom puta, a suboptimalnost procentom iznad Dijkstrinog najjeftinijeg rešenja. Fiksirano seme omogućava ponavljanje istih mapa.</aside>
+        </section>
+
+        <section class="slide" data-title="A* i Dijkstra" data-time="0:55" data-section="Rezultat 1" aria-label="Slajd 7 od 13">
+          <p class="eyebrow">Najjasnija vrednost heuristike</p>
+          <h2>Isti kvalitet puta. <span class="teal">Znatno manje istraživanja.</span></h2>
+          <div class="bars-layout">
+            <div>
+              <div class="bar-chart" role="img" aria-label="Dijkstra prosečno proširuje 584 čvora, a A zvezda 219">
+                <div class="bar-row dijkstra"><span class="bar-label">Dijkstra</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-value">584</span></div>
+                <div class="bar-row astar"><span class="bar-label">A*</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-value">219</span></div>
+              </div>
+              <p class="chart-caption">prosečan broj proširenih čvorova</p>
+            </div>
+            <div class="result-callout"><strong>62,5%</strong><span>manje obrade uz isti najjeftiniji put</span><div class="same-quality">0% suboptimalnosti kod oba</div></div>
+          </div>
+          <span class="slide-number">07</span>
+          <aside class="speaker-notes">Ovo je centralni pozitivan nalaz. Dijkstra i A* imaju nultu suboptimalnost, dakle nalaze isti kvalitet. A* prosečno proširuje oko 219 čvorova umesto 584, što je 62,5 odsto manje. Razliku pravi dopuštena heuristika: ona usmerava pretragu, a ne narušava garanciju optimalnosti.</aside>
+        </section>
+
+        <section class="slide" data-title="Kompromis" data-time="1:10" data-section="Rezultat 2" aria-label="Slajd 8 od 13">
+          <div class="tradeoff-layout">
+            <div class="tradeoff-copy">
+              <p class="eyebrow">Centralni nalaz</p>
+              <h2>Ne postoji univerzalni pobednik.</h2>
+              <div class="tradeoff-fact"><strong>A* čuva optimum</strong><span>najbolji izbor kada kvalitet puta nema cenu kompromisa</span></div>
+              <div class="tradeoff-fact"><strong>Swarm štedi dodatnih 43,5%</strong><span>uz prosečno 2,97% skuplji put</span></div>
+            </div>
+            <figure class="tradeoff-figure"><img src="../../Metrike/Slike/g04-kompromis-brzina-optimalnost.png" alt="Dijagram kompromisa između broja proširenih čvorova i suboptimalnosti puta"></figure>
+          </div>
+          <span class="slide-number">08</span>
+          <aside class="speaker-notes">Čitati grafikon levo i nisko: manje proširenih čvorova i manja suboptimalnost su bolji. A* dominira Dijkstrom jer daje isti kvalitet uz manje obrade. Swarm ide još ulevo, ali malo naviše: dodatno štedi obradu uz mali gubitak kvaliteta. Izbor zato zavisi od zahteva problema, ne od jedne rang-liste algoritama.</aside>
+        </section>
+
+        <section class="slide" data-title="Neočekivani nalazi" data-time="1:10" data-section="Rezultat 3" aria-label="Slajd 9 od 13">
+          <p class="eyebrow">Kada intuicija izađe iz svog modela</p>
+          <h2>Tri nalaza koja menjaju <span class="accent">uobičajenu priču</span>.</h2>
+          <div class="finding-grid">
+            <div class="finding"><strong>+18,1%</strong><h3>BFS na ponderisanom terenu</h3><p>Najmanje koraka nije isto što i najmanja ukupna cena.</p></div>
+            <div class="finding"><strong>5×</strong><h3>DFS memorija na grafu</h3><p>Stek može biti veći od BFS reda kada graf ima cikluse i grananje.</p></div>
+            <div class="finding"><strong>+128,5%</strong><h3>0–1 BFS van svog domena</h3><p>Ispravna implementacija daje loš rezultat kada težine nisu samo 0 i 1.</p></div>
+          </div>
+          <p class="finding-conclusion">Svojstvo algoritma važi samo unutar modela za koji je izvedeno.</p>
+          <span class="slide-number">09</span>
+          <aside class="speaker-notes">Za svaki nalaz dati jednu rečenicu objašnjenja. BFS garantuje najmanje grana samo kada su koraci jednake cene. Tvrdnja da DFS troši manje memorije obično se izvodi za stablo, dok ovde radimo nad grafom. 0–1 BFS je specijalista; kada se primeni na opšte težine, formalno radi, ali optimizuje pogrešan model.</aside>
+        </section>
+
+        <section class="slide ai-slide" data-title="Veštačka inteligencija" data-time="1:05" data-section="AI sloj" aria-label="Slajd 10 od 13">
+          <div class="ai-layout">
+            <div class="ai-copy">
+              <p class="eyebrow">Kontrolisana podela odgovornosti</p>
+              <p class="ai-rule"><strong>Program računa.</strong><br>AI objašnjava.</p>
+              <p class="ai-proof">Tačnost modela pri čitanju ekstrema varirala je od <b>35,7% do 90,0%</b>. Najpouzdaniji je tutor, jer program unapred bira proverene trenutke koje model samo tumači.</p>
+            </div>
+            <figure class="ai-image"><img src="../../Pisanje master rada/Slike/snimak-6-2-1.png" alt="AI tutor objašnjava provereni trenutak izvršavanja algoritma"></figure>
+          </div>
+          <span class="slide-number">10</span>
+          <aside class="speaker-notes">Objasniti granicu: jezički model ne računa cenu puta i ne odlučuje da li put postoji. Server pokreće algoritme, proverava rezultate i bira ključne trenutke. Model dobija taj kontekst i oblikuje objašnjenje. Evaluacija pet modela je pokazala veliku promenljivost u numeričkom zaključivanju, što opravdava ovu podelu odgovornosti.</aside>
+        </section>
+
+        <section class="slide" data-title="Obim evaluacije" data-time="0:50" data-section="Evaluacija" aria-label="Slajd 11 od 13">
+          <p class="eyebrow">Šta je zaista provereno</p>
+          <h2>Četiri ugla istog sistema.</h2>
+          <div class="evaluation-grid">
+            <div class="evaluation-item"><strong>9.444</strong><span>simulacije algoritama</span></div>
+            <div class="evaluation-item"><strong>11.000+</strong><span>simulacije bodovnog sistema</span></div>
+            <div class="evaluation-item"><strong>410</strong><span>uspešno obrađeni AI pozivi</span></div>
+            <div class="evaluation-item"><strong>10</strong><span>Nielsenovih heuristika interfejsa</span></div>
+          </div>
+          <div class="evaluation-boundary">
+            <div><strong>Potvrđeno:</strong> algoritamsko ponašanje, robusnost bodovanja i ograničenja AI sloja.</div>
+            <div><strong>Nije tvrđeno:</strong> poboljšanje ishoda učenja bez sprovedenog korisničkog eksperimenta.</div>
+          </div>
+          <span class="slide-number">11</span>
+          <aside class="speaker-notes">Ovaj slajd postavlja granice tvrdnji. Algoritmi, Playground bodovanje i AI moduli imaju sistematska merenja. Interfejs je samoevaluiran prema deset Nielsenovih heuristika, a instrument za korisničko ispitivanje je pripremljen. Pošto korisnički eksperiment nije sproveden, rad ne tvrdi da je dokazano bolje učenje.</aside>
+        </section>
+
+        <section class="slide contribution-slide" data-title="Doprinos" data-time="0:55" data-section="Doprinos" aria-label="Slajd 12 od 13">
+          <p class="eyebrow">Šta rad donosi</p>
+          <h2>Od demonstracije do proverljivog nastavnog alata.</h2>
+          <div class="contribution-grid">
+            <div class="contribution"><span class="contribution-word">Vidi</span><p>Zajednički jezik događaja odvaja algoritam od animacije.</p></div>
+            <div class="contribution"><span class="contribution-word">Meri</span><p>Ponovljivi scenariji, zajednička cena puta i suboptimalnost.</p></div>
+            <div class="contribution"><span class="contribution-word">Razume</span><p>Aktivno rešavanje i AI koji objašnjava proverene činjenice.</p></div>
+          </div>
+          <p class="contribution-summary">Jedan sistem povezuje učenje, eksperiment i primenljivu implementaciju.</p>
+          <span class="slide-number">12</span>
+          <aside class="speaker-notes">Sažeti doprinos kroz tri glagola. „Vidi“ je vizuelni i implementacioni sloj zasnovan na događajima. „Meri“ je istraživačka infrastruktura i zajednička skala koja omogućava pošteno poređenje. „Razume“ su Playground i ograničeni AI sloj. Naglasiti da vrednost nije u pojedinačnoj funkciji već u njihovom povezivanju.</aside>
+        </section>
+
+        <section class="slide closing-slide" data-title="Zaključak" data-time="0:25" aria-label="Slajd 13 od 13">
+          <div class="closing-content">
+            <p class="eyebrow">Zaključak</p>
+            <h2>Najbolji algoritam ne postoji <span class="accent">van konteksta</span>.</h2>
+            <p>Vrednost sistema je u tome što korisnik tu razliku može da vidi, izmeri i sam iskusi.</p>
+            <div class="questions">Pitanja</div>
+          </div>
+          <aside class="speaker-notes">Završiti bez novih podataka. Ponoviti samo glavnu poruku: algoritam se ne bira po imenu, već prema modelu problema i prihvatljivom odnosu kvaliteta i troška. Zahvaliti komisiji i otvoriti pitanja.</aside>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="counter" aria-live="polite"><span id="currentSlide">01</span> / <span id="totalSlides">13</span> · <span id="slideTime">0:30</span></div>
+  <nav class="controls" aria-label="Kontrole prezentacije">
+    <button class="control-button" id="previousButton" type="button" title="Prethodni slajd" aria-label="Prethodni slajd">←</button>
+    <button class="control-button" id="overviewButton" type="button" title="Pregled slajdova" aria-label="Pregled slajdova">▦</button>
+    <button class="control-button" id="notesButton" type="button" title="Govorne beleške" aria-label="Govorne beleške" aria-pressed="false">▤</button>
+    <button class="control-button" id="fullscreenButton" type="button" title="Ceo ekran" aria-label="Ceo ekran">⛶</button>
+    <button class="control-button" id="nextButton" type="button" title="Sledeći slajd" aria-label="Sledeći slajd">→</button>
+  </nav>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <aside class="notes-panel" id="notesPanel" aria-label="Govorne beleške" hidden>
+    <strong id="notesTitle"></strong>
+    <p id="notesText"></p>
+  </aside>
+
+  <section class="overview" id="overview" aria-label="Pregled svih slajdova" hidden>
+    <div class="overview-header"><h2>Pregled slajdova</h2><button class="control-button" id="closeOverviewButton" type="button" title="Zatvori pregled" aria-label="Zatvori pregled">×</button></div>
+    <div class="overview-grid" id="overviewGrid"></div>
+  </section>
+
+  <script>
+    (() => {
+      const slideWidth = 1600;
+      const slideHeight = 900;
+      const slides = [...document.querySelectorAll("#stage > .slide")];
+      const stageViewport = document.getElementById("stageViewport");
+      const currentSlide = document.getElementById("currentSlide");
+      const totalSlides = document.getElementById("totalSlides");
+      const slideTime = document.getElementById("slideTime");
+      const progressBar = document.getElementById("progressBar");
+      const previousButton = document.getElementById("previousButton");
+      const nextButton = document.getElementById("nextButton");
+      const overviewButton = document.getElementById("overviewButton");
+      const notesButton = document.getElementById("notesButton");
+      const fullscreenButton = document.getElementById("fullscreenButton");
+      const notesPanel = document.getElementById("notesPanel");
+      const notesTitle = document.getElementById("notesTitle");
+      const notesText = document.getElementById("notesText");
+      const overview = document.getElementById("overview");
+      const overviewGrid = document.getElementById("overviewGrid");
+      const closeOverviewButton = document.getElementById("closeOverviewButton");
+      let activeIndex = Math.max(0, Number.parseInt(location.hash.slice(1), 10) - 1 || 0);
+      let notesVisible = false;
+
+      totalSlides.textContent = String(slides.length).padStart(2, "0");
+
+      function fitStage() {
+        const availableWidth = Math.max(320, window.innerWidth - 32);
+        const availableHeight = Math.max(180, window.innerHeight - 64);
+        const scale = Math.min(availableWidth / slideWidth, availableHeight / slideHeight);
+        stageViewport.style.transform = `scale(${scale})`;
+        stageViewport.style.marginInline = `${(slideWidth * scale - slideWidth) / 2}px`;
+        stageViewport.style.marginBlock = `${(slideHeight * scale - slideHeight) / 2}px`;
+      }
+
+      function render() {
+        activeIndex = Math.min(Math.max(activeIndex, 0), slides.length - 1);
+        slides.forEach((slide, index) => {
+          const active = index === activeIndex;
+          slide.classList.toggle("active", active);
+          slide.setAttribute("aria-hidden", String(!active));
+        });
+        const slide = slides[activeIndex];
+        currentSlide.textContent = String(activeIndex + 1).padStart(2, "0");
+        slideTime.textContent = slide.dataset.time || "";
+        progressBar.style.width = `${((activeIndex + 1) / slides.length) * 100}%`;
+        previousButton.disabled = activeIndex === 0;
+        nextButton.disabled = activeIndex === slides.length - 1;
+        notesTitle.textContent = `${String(activeIndex + 1).padStart(2, "0")} · ${slide.dataset.title} · ${slide.dataset.time}`;
+        notesText.textContent = slide.querySelector(".speaker-notes")?.textContent.trim() || "";
+        history.replaceState(null, "", `#${activeIndex + 1}`);
+        document.title = `${activeIndex + 1}/${slides.length} · ${slide.dataset.title} · Predrag Pešić`;
+      }
+
+      function goTo(index) {
+        if (index === activeIndex || index < 0 || index >= slides.length) return;
+        activeIndex = index;
+        render();
+      }
+
+      function toggleNotes() {
+        notesVisible = !notesVisible;
+        notesPanel.hidden = !notesVisible;
+        notesButton.setAttribute("aria-pressed", String(notesVisible));
+      }
+
+      function buildOverview() {
+        if (overviewGrid.children.length) return;
+        slides.forEach((slide, index) => {
+          const button = document.createElement("button");
+          const preview = document.createElement("div");
+          const clone = slide.cloneNode(true);
+          button.type = "button";
+          button.className = "overview-card";
+          button.setAttribute("aria-label", `Otvori slajd ${index + 1}: ${slide.dataset.title}`);
+          preview.className = "overview-preview";
+          clone.classList.add("active");
+          clone.removeAttribute("aria-hidden");
+          preview.append(clone);
+          button.append(preview);
+          button.addEventListener("click", () => {
+            overview.hidden = true;
+            goTo(index);
+          });
+          overviewGrid.append(button);
+        });
+      }
+
+      function toggleOverview() {
+        buildOverview();
+        overview.hidden = !overview.hidden;
+        if (!overview.hidden) overview.querySelector("button")?.focus();
+      }
+
+      previousButton.addEventListener("click", () => goTo(activeIndex - 1));
+      nextButton.addEventListener("click", () => goTo(activeIndex + 1));
+      notesButton.addEventListener("click", toggleNotes);
+      overviewButton.addEventListener("click", toggleOverview);
+      closeOverviewButton.addEventListener("click", () => { overview.hidden = true; overviewButton.focus(); });
+      fullscreenButton.addEventListener("click", async () => {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      });
+
+      document.addEventListener("keydown", event => {
+        if (!overview.hidden && event.key === "Escape") {
+          overview.hidden = true;
+          return;
+        }
+        if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(event.key)) {
+          event.preventDefault();
+          goTo(activeIndex + 1);
+        } else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(event.key)) {
+          event.preventDefault();
+          goTo(activeIndex - 1);
+        } else if (event.key === "Home") {
+          goTo(0);
+        } else if (event.key === "End") {
+          goTo(slides.length - 1);
+        } else if (event.key.toLowerCase() === "n") {
+          toggleNotes();
+        } else if (event.key.toLowerCase() === "o") {
+          toggleOverview();
+        } else if (event.key.toLowerCase() === "f") {
+          fullscreenButton.click();
+        }
+      });
+
+      window.addEventListener("resize", fitStage);
+      window.addEventListener("hashchange", () => {
+        const requested = Number.parseInt(location.hash.slice(1), 10) - 1;
+        if (Number.isInteger(requested)) goTo(requested);
+      });
+
+      fitStage();
+      render();
+    })();
+  </script>
+</body>
+</html>
