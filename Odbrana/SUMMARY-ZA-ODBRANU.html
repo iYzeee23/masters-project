@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Summary za odbranu - Predrag Pešić</title>
+  <style>
+    :root {
+      --bg: #f4eee6;
+      --paper: #fffdf9;
+      --soft: #eee5da;
+      --ink: #352b26;
+      --muted: #74675f;
+      --line: #ddd0c2;
+      --brown: #8b5e50;
+      --brown-dark: #68443a;
+      --blue: #367fa4;
+      --teal: #267f7d;
+      --gold: #b57a18;
+      --coral: #bd5144;
+      --green: #4f7f62;
+      --violet: #745b9f;
+      --reading-size: 17px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(139, 94, 80, 0.045) 1px, transparent 1px),
+        var(--bg);
+      background-size: 100% 32px;
+      font-family: Aptos, "Segoe UI", sans-serif;
+      font-size: var(--reading-size);
+      line-height: 1.65;
+      letter-spacing: 0;
+    }
+
+    .progress {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 30;
+      height: 4px;
+      background: var(--line);
+    }
+
+    .progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--brown);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 4px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px max(16px, calc((100vw - 980px) / 2));
+      border-bottom: 1px solid var(--line);
+      background: rgba(248, 243, 236, 0.96);
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toolbar select,
+    .toolbar button {
+      min-height: 36px;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      font: 700 14px/1 Aptos, "Segoe UI", sans-serif;
+    }
+
+    .toolbar select {
+      min-width: 0;
+      flex: 1;
+      max-width: 390px;
+      padding: 8px 10px;
+    }
+
+    .toolbar button {
+      padding: 0 12px;
+      cursor: pointer;
+    }
+
+    .toolbar .font-button {
+      width: 38px;
+      padding: 0;
+      color: var(--brown-dark);
+      font-size: 17px;
+    }
+
+    .page {
+      width: min(980px, calc(100% - 32px));
+      margin: 28px auto 64px;
+    }
+
+    .hero {
+      padding: 42px 46px;
+      border-top: 6px solid var(--brown);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 10px 32px rgba(78, 55, 44, 0.09);
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 760px;
+      font-size: 42px;
+      line-height: 1.12;
+    }
+
+    .subtitle {
+      max-width: 720px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-left: 3px solid var(--brown);
+      background: var(--soft);
+    }
+
+    .stat:nth-child(2) { border-color: var(--teal); }
+    .stat:nth-child(3) { border-color: var(--gold); }
+
+    .stat strong {
+      display: block;
+      color: var(--brown-dark);
+      font-size: 20px;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .section {
+      scroll-margin-top: 78px;
+      margin-top: 46px;
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--line);
+    }
+
+    .section-number {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--brown);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h2 {
+      font-size: 29px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 26px 0 10px;
+      color: var(--brown-dark);
+      font-size: 22px;
+    }
+
+    h4 {
+      margin: 18px 0 7px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    p { margin: 0 0 13px; }
+    strong { color: var(--brown-dark); }
+    code, .formula {
+      color: var(--brown-dark);
+      background: rgba(139, 94, 80, 0.09);
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    .concept-grid,
+    .tech-grid,
+    .metric-grid,
+    .result-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .concept-grid { grid-template-columns: repeat(2, 1fr); }
+    .tech-grid { grid-template-columns: repeat(2, 1fr); }
+    .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .result-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .item {
+      padding: 17px 18px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+    }
+
+    .item h3,
+    .item h4 { margin-top: 0; }
+    .item p:last-child { margin-bottom: 0; }
+
+    .term {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--brown-dark);
+      font-weight: 800;
+    }
+
+    .tech-group {
+      padding: 20px;
+      border-top: 4px solid var(--blue);
+      border-radius: 7px;
+      background: var(--paper);
+      box-shadow: 0 4px 16px rgba(78, 55, 44, 0.05);
+    }
+
+    .tech-group:nth-child(2) { border-color: var(--teal); }
+    .tech-group:nth-child(3) { border-color: var(--gold); }
+    .tech-group:nth-child(4) { border-color: var(--violet); }
+    .tech-group h3 { margin-top: 0; }
+
+    ul, ol { padding-left: 24px; }
+    li { margin: 7px 0; }
+
+    .compact-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .compact-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .compact-list li:last-child { border-bottom: 0; }
+
+    .callout {
+      margin: 18px 0;
+      padding: 16px 18px;
+      border-left: 4px solid var(--teal);
+      background: rgba(38, 127, 125, 0.08);
+    }
+
+    .callout.warning {
+      border-left-color: var(--gold);
+      background: rgba(181, 122, 24, 0.09);
+    }
+
+    .callout strong { display: inline-block; margin-right: 4px; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 18px 0;
+      counter-reset: flow;
+    }
+
+    .flow-step {
+      position: relative;
+      min-height: 112px;
+      padding: 35px 12px 12px;
+      border-top: 3px solid var(--blue);
+      background: var(--paper);
+      box-shadow: 0 3px 12px rgba(78, 55, 44, 0.05);
+      counter-increment: flow;
+    }
+
+    .flow-step::before {
+      content: counter(flow, decimal-leading-zero);
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .flow-step:nth-child(2) { border-color: var(--teal); }
+    .flow-step:nth-child(3) { border-color: var(--gold); }
+    .flow-step:nth-child(4) { border-color: var(--violet); }
+    .flow-step:nth-child(5) { border-color: var(--coral); }
+    .flow-step strong { display: block; margin-bottom: 4px; }
+    .flow-step span { color: var(--muted); font-size: 14px; }
+
+    pre {
+      overflow-x: auto;
+      margin: 16px 0;
+      padding: 18px;
+      color: #f7eee7;
+      border-radius: 6px;
+      background: #463730;
+      font: 14px/1.55 Consolas, "Courier New", monospace;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 14px 0 20px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+    }
+
+    table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--brown-dark);
+      background: var(--soft);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .formula {
+      display: block;
+      overflow-x: auto;
+      margin: 12px 0;
+      padding: 13px 15px;
+      border-left: 3px solid var(--brown);
+      white-space: nowrap;
+    }
+
+    .qa-list {
+      display: grid;
+      gap: 13px;
+    }
+
+    .qa {
+      scroll-margin-top: 78px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+      box-shadow: 0 4px 16px rgba(78, 55, 44, 0.05);
+    }
+
+    .qa summary {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 17px 18px;
+      cursor: pointer;
+      list-style: none;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .qa summary::-webkit-details-marker { display: none; }
+
+    .qa summary::after {
+      content: "+";
+      color: var(--brown);
+      font: 700 22px/1 Aptos, "Segoe UI", sans-serif;
+    }
+
+    .qa[open] summary::after { content: "−"; }
+
+    .q-number {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--brown);
+      font: 800 13px/1 Aptos, "Segoe UI", sans-serif;
+    }
+
+    .qa:nth-child(4n + 2) .q-number { background: var(--teal); }
+    .qa:nth-child(4n + 3) .q-number { background: var(--gold); }
+    .qa:nth-child(4n + 4) .q-number { background: var(--violet); }
+
+    .answer {
+      padding: 18px 22px 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .answer > :last-child { margin-bottom: 0; }
+
+    .answer-label {
+      margin-bottom: 8px;
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .example {
+      margin-top: 14px;
+      padding: 13px 15px;
+      border-left: 3px solid var(--gold);
+      background: rgba(181, 122, 24, 0.08);
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0 22px;
+    }
+
+    .answer-block {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .answer-block strong { display: block; }
+    .answer-block p { margin: 3px 0 0; }
+
+    .takeaway {
+      margin-top: 16px;
+      padding: 14px 16px;
+      color: #fff;
+      background: var(--brown-dark);
+    }
+
+    footer {
+      padding: 38px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 760px) {
+      .toolbar label { display: none; }
+      .toolbar { gap: 6px; padding-inline: 10px; }
+      .toolbar select { max-width: none; }
+      .toolbar button { padding-inline: 9px; }
+      .page { width: min(100% - 20px, 980px); margin-top: 14px; }
+      .hero { padding: 28px 22px; }
+      h1 { font-size: 31px; }
+      .stats,
+      .concept-grid,
+      .tech-grid,
+      .metric-grid,
+      .result-grid,
+      .answer-grid { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow-step { min-height: 0; }
+      .section { margin-top: 36px; }
+      h2 { font-size: 25px; }
+      .qa summary { grid-template-columns: 38px 1fr auto; padding: 15px 14px; font-size: 18px; }
+      .answer { padding: 16px; }
+    }
+
+    @media (max-width: 460px) {
+      .toolbar .font-button { width: 34px; flex: 0 0 34px; }
+      .section-heading { grid-template-columns: 38px 1fr; }
+      .section-number { width: 36px; height: 36px; }
+    }
+
+    @media print {
+      body { background: #fff; font-size: 11pt; }
+      .progress, .toolbar { display: none; }
+      .page { width: 100%; margin: 0; }
+      .hero, .qa, .tech-group { box-shadow: none; }
+      .qa { break-inside: avoid; }
+      .qa .answer { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+  <nav class="toolbar" aria-label="Navigacija kroz sažetak">
+    <label for="section-picker">Idi na:</label>
+    <select id="section-picker" aria-label="Izaberi odeljak">
+      <option value="pojmovi">Osnovni pojmovi</option>
+      <option value="tehnologije">Tehnologije</option>
+      <option value="izvrsavanje">Tok izvršavanja</option>
+      <option value="dogadjaji">Algoritmi i događaji</option>
+      <option value="ai-tok">Tok AI preporuke</option>
+      <option value="benchmark">Benchmark i metrike</option>
+      <option value="zakljucci">Zaključci za pamćenje</option>
+      <option value="pitanja">14 pitanja i odgovora</option>
+    </select>
+    <button id="toggle-answers" type="button" aria-pressed="false">Sakrij</button>
+    <button id="smaller" class="font-button" type="button" title="Smanji tekst" aria-label="Smanji tekst">A−</button>
+    <button id="larger" class="font-button" type="button" title="Povećaj tekst" aria-label="Povećaj tekst">A+</button>
+  </nav>
+
+  <main class="page">
+    <header class="hero">
+      <h1>Summary za odbranu</h1>
+      <p class="subtitle">Završni pregled pojmova koje treba ponoviti, sa kratkim odgovorima na sva otvorena pitanja.</p>
+      <div class="stats">
+        <div class="stat"><strong>14</strong><span>pitanja i odgovora</span></div>
+        <div class="stat"><strong>8</strong><span>algoritama</span></div>
+        <div class="stat"><strong>4</strong><span>kategorije evaluacije</span></div>
+      </div>
+    </header>
+
+    <section class="section" id="pojmovi">
+      <div class="section-heading">
+        <span class="section-number">01</span>
+        <h2>Osnovni pojmovi</h2>
+      </div>
+
+      <div class="concept-grid">
+        <div class="item">
+          <span class="term">Obrađeno ili prošireno polje</span>
+          Polje koje je algoritam uzeo na razmatranje i iz njega proverio moguće nastavke.
+        </div>
+        <div class="item">
+          <span class="term">Frontijer</span>
+          Skup polja koja je algoritam otkrio, ali ih još nije obradio. Možemo ga zamisliti kao listu sledećih kandidata za proveru. Najveća veličina te liste daje predstavu o tome koliko memorije pretraga zahteva.
+        </div>
+        <div class="item">
+          <span class="term">AI nije konačni autoritet</span>
+          Modeli su uglavnom uspešno vraćali odgovor u traženom obliku, ali nisu uvek pravilno zaključivali koji je algoritam najbolji ili najgori. To nije neuspeh cele ideje. Naprotiv, potvrđuje da je ispravno što AI nije postavljen kao konačni autoritet.
+        </div>
+        <div class="item">
+          <span class="term">Razumevanje zahteva nije isto što i pronalaženje rešenja</span>
+          Generator je uglavnom dobro razumevao šta korisnik traži, ali program nije uvek uspevao da među napravljenim kandidatima pronađe mapu sa baš tim svojstvom.
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="tehnologije">
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <h2>Tehnološki stek</h2>
+      </div>
+
+      <div class="tech-grid">
+        <article class="tech-group">
+          <h3>Klijent</h3>
+          <ul class="compact-list">
+            <li><strong>Angular</strong> - stranice, komponente, servisi, forme, rutiranje i dependency injection.</li>
+            <li><strong>TypeScript</strong> - tipovi podataka, algoritmi, događaji i rezultati.</li>
+            <li><strong>RxJS</strong> - biblioteka za asinhrone tokove podataka; koriste se Observable i BehaviorSubject.</li>
+            <li><strong>HTML5 Canvas</strong> - ugrađena površina pregledača za crtanje; mogućnost pregledača, a ne dodatna JavaScript biblioteka.</li>
+            <li><strong>Tailwind CSS</strong> - sistem pomoćnih CSS klasa.</li>
+            <li><strong>PostCSS</strong> - alat za obradu CSS-a pre isporuke pregledaču.</li>
+            <li><strong>Socket.IO Client</strong> - biblioteka za stalnu vezu sa serverom i prijem obaveštenja.</li>
+          </ul>
+        </article>
+
+        <article class="tech-group">
+          <h3>Server</h3>
+          <ul class="compact-list">
+            <li><strong>Node.js</strong> - izvršava TypeScript/JavaScript kod van pregledača.</li>
+            <li><strong>Express</strong> - definiše REST putanje i obrađuje HTTP zahteve.</li>
+            <li><strong>MongoDB</strong> - nerelaciona baza podataka zasnovana na dokumentima.</li>
+            <li><strong>Mongoose</strong> - opisuje modele MongoDB dokumenata i olakšava upite; preko njega server razgovara sa bazom.</li>
+            <li><strong>Zod</strong> - proverava oblik i granice podataka koji stignu u zahtevima.</li>
+            <li><strong>JWT</strong> - potpisuje i proverava tokene prijavljenih korisnika.</li>
+            <li><strong>bcryptjs</strong> - čuva lozinke kao bezbedne hash vrednosti.</li>
+            <li><strong>Helmet</strong> - postavlja bezbednosna HTTP zaglavlja.</li>
+            <li><strong>Express Rate Limit</strong> - ograničava učestale pokušaje prijave i prevelik broj AI poziva.</li>
+            <li><strong>CORS</strong> - određuje sa kojih adresa pregledač sme da poziva server.</li>
+            <li><strong>Socket.IO</strong> - šalje događaje povezanim klijentima.</li>
+            <li><strong>Multer</strong> - prima slike u okviru REST zahteva.</li>
+            <li><strong>Cloudinary</strong> - skladišti slike u oblaku, dok server čuva dobijeni URL.</li>
+            <li><strong>dotenv</strong> - učitava tajne i podešavanja, poput adrese baze i AI tokena.</li>
+          </ul>
+        </article>
+
+        <article class="tech-group">
+          <h3>AI i obrada rezultata</h3>
+          <ul class="compact-list">
+            <li><strong>GitHub Models</strong> - spoljni servis preko koga se pozivaju jezički modeli.</li>
+            <li><strong>OpenAI-compatible format</strong> - standardni JSON oblik zahteva koji GitHub Models prihvata.</li>
+            <li><strong>Python</strong> - zasebna obrada izvezenih rezultata eksperimenata.</li>
+            <li><strong>Pandas</strong> - učitavanje CSV podataka, grupisanje i pravljenje tabela.</li>
+            <li><strong>NumPy</strong> - numeričke operacije nad nizovima rezultata.</li>
+            <li><strong>SciPy</strong> - statistički proračuni, uključujući intervale poverenja i testove.</li>
+            <li><strong>Matplotlib</strong> - generisanje grafikona.</li>
+          </ul>
+        </article>
+
+        <article class="tech-group">
+          <h3>Razvojni alati</h3>
+          <ul class="compact-list">
+            <li><strong>Angular CLI i Angular Build</strong> služe za pokretanje i pakovanje klijenta.</li>
+            <li><strong>ts-node</strong> izvršava serverske TypeScript skripte bez prethodnog ručnog prevođenja.</li>
+            <li><strong>nodemon</strong> ponovo pokreće server kada se kod promeni.</li>
+            <li><strong>Vitest i jsdom</strong> obezbeđuju okruženje za klijentske testove.</li>
+            <li><strong>Prettier</strong> ujednačava format koda.</li>
+            <li><strong>concurrently</strong> istovremeno pokreće Angular i proces za obradu stilova.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="izvrsavanje">
+      <div class="section-heading">
+        <span class="section-number">03</span>
+        <h2>Tok izvršavanja</h2>
+      </div>
+
+      <div class="callout warning">
+        <strong>Ispravka nakon provere koda:</strong> Angular ne čeka server da izračuna svaki korak vizualizacije. <code>VisualizationService</code> pravi algoritam i unapred izračunava sve korake direktno u pregledaču, a zatim ih reprodukuje željenom brzinom na Canvas-u.
+      </div>
+
+      <div class="flow">
+        <div class="flow-step"><strong>Korisnik</strong><span>Klikne „Pokreni”.</span></div>
+        <div class="flow-step"><strong>Algoritam u klijentu</strong><span>Izračuna ceo trag korak po korak.</span></div>
+        <div class="flow-step"><strong>VisualizationService</strong><span>Sačuva grupe događaja.</span></div>
+        <div class="flow-step"><strong>Kontrole</strong><span>Puštaju, pauziraju ili premotavaju trag.</span></div>
+        <div class="flow-step"><strong>Canvas</strong><span>Prikazuje trenutno stanje.</span></div>
+      </div>
+
+      <p>Server ima svoje brze realizacije zato što mu za automatsko poređenje nije potrebna boja svakog polja ni mogućnost pauziranja. Potrebni su mu samo put i merene vrednosti. Izostavljanje hiljada događaja čini masovna merenja znatno bržim.</p>
+
+      <div class="callout">
+        <strong>Konkretan primer razlike:</strong> u režimu sa osam suseda klijentska verzija zabranjuje dijagonalni prolaz kroz ugao koji zatvaraju zidovi. Benchmark verzija proverava samo da ciljno dijagonalno polje nije zid i takav prolaz dopušta. To je ograničenje usklađenosti dve realizacije koje treba otvoreno pomenuti ako komisija pita.
+      </div>
+    </section>
+
+    <section class="section" id="dogadjaji">
+      <div class="section-heading">
+        <span class="section-number">04</span>
+        <h2>Algoritamski ugovor i događaji</h2>
+      </div>
+
+      <p><code>PathfindingAlgorithm</code> je interfejs, odnosno ugovor. Algoritmi su predstavljeni kao <strong>step-based state machine</strong>, mašina stanja koja napreduje korak po korak. Zbog toga spoljašnji kod odlučuje kada će se sledeći korak prikazati.</p>
+      <p>Glavne strukture podataka su: <strong>BFS red</strong>, <strong>DFS stek</strong> i <strong>0-1 BFS dvostrani red</strong>. Dijkstra, A*, Greedy, Swarm i Convergent Swarm dele jednu mašinu sa prioritetnim redom i razlikuju se po funkciji prioriteta.</p>
+
+      <pre aria-label="Primer algoritamskog događaja">{
+  "type": "OPEN_ADD",
+  "node": { "row": 4, "col": 7 },
+  "g": 6,
+  "h": 8,
+  "f": 14,
+  "parent": { "row": 4, "col": 6 }
+}</pre>
+
+      <div class="concept-grid">
+        <div class="item"><span class="term">OPEN_ADD</span>Dodaje polje u frontijer.</div>
+        <div class="item"><span class="term">CLOSE_ADD</span>Prebacuje polje među obrađena polja.</div>
+        <div class="item"><span class="term">SET_CURRENT</span>Označava trenutno polje.</div>
+        <div class="item"><span class="term">FOUND_PATH</span>Prosleđuje konačan put za prikaz.</div>
+        <div class="item"><span class="term">NO_PATH</span>Završava prikaz bez pronađenog puta.</div>
+      </div>
+
+      <h3>Deljeni tipovi i DTO</h3>
+      <p>Tipovi algoritama i događaja centralizovani su u <code>shared/types</code>. Međutim, deo metoda za HTTP odgovore koristi tip <code>any</code>, dok server zahteve proverava Zod šemama. Sistem zato ima jasan stvarni JSON ugovor, ali taj ugovor nije potpuno povezan statičkim tipovima od servera do Angular-a.</p>
+      <p>Dobro unapređenje bilo bi da klijent i server dele iste DTO tipove i šeme. <strong>DTO</strong> je mali objekat namenjen prenosu podataka između delova sistema.</p>
+    </section>
+
+    <section class="section" id="ai-tok">
+      <div class="section-heading">
+        <span class="section-number">05</span>
+        <h2>Tok AI preporuke</h2>
+      </div>
+
+      <div class="flow">
+        <div class="flow-step"><strong>Angular</strong><span>Korisnik traži preporuku; klijent priprema mapu.</span></div>
+        <div class="flow-step"><strong>REST zahtev</strong><span>JSON i JWT odlaze na <code>POST /api/ai/recommend</code>.</span></div>
+        <div class="flow-step"><strong>Express</strong><span>Autentikacija i Zod proveravaju zahtev.</span></div>
+        <div class="flow-step"><strong>Algoritmi + AI</strong><span>Server meri osam algoritama; GitHub Models objašnjava.</span></div>
+        <div class="flow-step"><strong>Prikaz</strong><span>JSON se vraća; RxJS i Angular osvežavaju panel.</span></div>
+      </div>
+
+      <div class="takeaway"><strong>Pravilo arhitekture:</strong> program računa, AI objašnjava.</div>
+    </section>
+
+    <section class="section" id="benchmark">
+      <div class="section-heading">
+        <span class="section-number">06</span>
+        <h2>Benchmark, metrike i statistika</h2>
+      </div>
+
+      <h3>Tok benchmark podsistema</h3>
+      <div class="formula">pitanje → kontrolisani scenario → sirovi rezultat svakog pokretanja → zajedničke metrike → statistička obrada → zaključak</div>
+
+      <ol>
+        <li><strong>Tip mape i gustina prepreka:</strong> da li isti algoritam ostaje dobar na drugačije oblikovanom problemu.</li>
+        <li><strong>Veličina mreže:</strong> kako količina rada raste kada problem postane veći.</li>
+        <li><strong>Vrsta heuristike:</strong> koliko kvalitet procene menja usmeravanje pretrage.</li>
+        <li><strong>Četiri ili osam suseda:</strong> kako dozvoljene kretnje menjaju put i prostor pretrage.</li>
+        <li><strong>Ponder heuristike:</strong> gde je granica između manjeg istraživanja i gubitka kvaliteta.</li>
+        <li><strong>Mapa bez mogućeg puta:</strong> da li se algoritam ispravno zaustavlja kada rešenje ne postoji.</li>
+      </ol>
+      <p>Poenta podele je da se u jednoj grupi menja jedna glavna stvar, dok ostali uslovi ostaju isti. Tako je lakše objasniti šta je izazvalo promenu rezultata.</p>
+
+      <h3>Zagrevanje pre merenja vremena</h3>
+      <p>JavaScript okruženje ubrzava često izvršavani kod tokom rada. Prvih nekoliko pokretanja može biti sporije samo zato što se okruženje još prilagođava. Zato se pre pravog merenja svaki algoritam pokrene 30 puta nad pomoćnom mapom, a ti rezultati se odbace.</p>
+
+      <h3>Sedam posmatranih metrika</h3>
+      <div class="metric-grid">
+        <div class="item"><span class="term">1. Broj proširenih čvorova</span>Koliko je polja stvarno obrađeno.</div>
+        <div class="item"><span class="term">2. Maksimalni frontijer</span>Najviše kandidata koji su istovremeno čekali.</div>
+        <div class="item"><span class="term">3. Stvarna cena puta</span>Zbir cena terena na vraćenom putu, uz cenu dijagonalnog koraka.</div>
+        <div class="item"><span class="term">4. Dužina puta</span>Broj koraka, odnosno ćelija na putu.</div>
+        <div class="item"><span class="term">5. Suboptimalnost</span>Procentualno odstupanje od Dijkstrine referentne cene.</div>
+        <div class="item"><span class="term">6. Stopa pronalaženja puta</span>U kom delu mapa je rešenje nađeno.</div>
+        <div class="item"><span class="term">7. Vreme izvršavanja</span>Trajanje na konkretnom sistemu.</div>
+      </div>
+
+      <div class="callout">
+        <strong>Nijedna metrika nije dovoljna sama.</strong> Algoritam sa najmanje proširenih čvorova može vratiti skup put, dok algoritam sa najboljim putem može zahtevati mnogo memorije. Vrednost rada je u zajedničkom posmatranju tih dimenzija.
+      </div>
+
+      <h3>Zašto prosek nije dovoljan?</h3>
+      <ul>
+        <li><strong>Aritmetička sredina</strong> opisuje tipičan nivo rezultata.</li>
+        <li><strong>Standardna devijacija</strong> pokazuje koliko se pojedinačni rezultati razlikuju.</li>
+        <li><strong>Interval poverenja</strong> pokazuje koliko je procena srednje vrednosti precizna.</li>
+        <li><strong>Medijana</strong> je srednji rezultat kada se vrednosti poređaju i manje je osetljiva na retke vremenske skokove.</li>
+      </ul>
+      <p>Zato su za broj proširenih čvorova i cenu korišćeni proseci uz rasipanje i intervale poverenja, dok je vreme prikazano medijanom.</p>
+    </section>
+
+    <section class="section" id="zakljucci">
+      <div class="section-heading">
+        <span class="section-number">07</span>
+        <h2>Zaključci za pamćenje</h2>
+      </div>
+
+      <div class="result-grid">
+        <div class="item"><span class="term">Mapa bez puta</span>Svi algoritmi ispravno završavaju i prijavljuju neuspeh kada je početak potpuno zatvoren.</div>
+        <div class="item"><span class="term">Kontekst menja rezultat</span>Isti algoritam nije jednako dobar na otvorenom polju, lavirintu, ponderisanom terenu i uskom prolazu.</div>
+        <div class="item"><span class="term">Nesačuvana mapa</span>Ručno nacrtana, a nesačuvana mapa može da se izgubi.</div>
+        <div class="item"><span class="term">Mrežne greške</span>Poruke o mrežnim greškama previše su opšte.</div>
+        <div class="item"><span class="term">Mali ekrani</span>Deo kontrola je tesan na malim ekranima.</div>
+      </div>
+      <p>Nielsenovi okviri pomogli su da se ove slabosti izdvoje kao konkretni problemi, umesto kao opšti utisak o interfejsu.</p>
+    </section>
+
+    <section class="section" id="pitanja">
+      <div class="section-heading">
+        <span class="section-number">08</span>
+        <h2>Pitanja i odgovori</h2>
+      </div>
+
+      <div class="qa-list">
+        <details class="qa" id="pitanje-1" open>
+          <summary><span class="q-number">01</span><span>Kako je u radu realizovana heuristika? Kako procenjujemo pravac u implementaciji?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Kratak odgovor</div>
+            <p>Heuristika ne računa ugao niti stvarno „gleda” prepreke. Funkcija uzima trenutno polje i cilj, izračuna razliku redova <code>Δr</code> i kolona <code>Δc</code>, pa iz toga proceni preostalu cenu. Čvor sa manjim <code>h(n)</code> smatra se bližim cilju, pa heuristika tako posredno određuje pravac.</p>
+            <div class="answer-grid">
+              <div class="answer-block"><strong>Manhattan</strong><p><code>h = |Δr| + |Δc|</code>, najbolja za četiri suseda.</p></div>
+              <div class="answer-block"><strong>Euklidska</strong><p><code>h = √(Δr² + Δc²)</code>, prava linija do cilja.</p></div>
+              <div class="answer-block"><strong>Čebiševljeva</strong><p><code>h = max(|Δr|, |Δc|)</code>, za jednake ortogonalne i dijagonalne korake.</p></div>
+              <div class="answer-block"><strong>Oktilna</strong><p><code>h = max + (√2 - 1) · min</code>, prilagođena za osam suseda sa dijagonalom cene <code>√2</code>.</p></div>
+            </div>
+            <div class="example"><strong>Primer:</strong> od polja (2, 3) do cilja (5, 7) važi <code>Δr = 3</code> i <code>Δc = 4</code>. Manhattan daje 7, a oktilna <code>4 + 3·(√2 - 1) ≈ 5,24</code>. Prepreke se ne računaju u proceni; algoritam ih otkriva tokom pretrage.</div>
+            <p><strong>Važna ograda:</strong> Manhattan je dopustiva za četiri suseda, ali u režimu sa osam suseda može preceniti rastojanje i A* tada formalno gubi garanciju optimalnosti.</p>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-2" open>
+          <summary><span class="q-number">02</span><span>Kako dodajemo veću težinu heuristici? Kako Swarm više veruje pravcu nego trenutnoj ceni puta?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Kratak odgovor</div>
+            <p>A* koristi <code>f(n) = g(n) + h(n)</code>. Swarm koristi <code>f(n) = g(n) + w·h(n)</code>. Množenjem heuristike brojem <code>w &gt; 1</code> procena do cilja jače utiče na prioritet od već pređene cene.</p>
+            <p>U osnovnom poređenju Swarm koristi <code>w = 2</code>, a Convergent Swarm <code>w = 5</code>. Interfejs može proslediti korisnički izabranu vrednost, dok Compare režim Convergent Swarm-u prosleđuje 2,5 puta veću vrednost od Swarm-a. Kada oba algoritma dobiju isto <code>w</code>, ponašaju se identično jer dele isto jezgro.</p>
+            <div class="example"><strong>Primer:</strong> dva kandidata imaju vrednosti <code>(g=10, h=3)</code> i <code>(g=6, h=6)</code>. A* daje 13 i 12, pa bira drugi. Sa <code>w=2</code> dobijamo 16 i 18, pa Swarm bira prvi jer je procenjen bliže cilju. Veće <code>w</code> znači manje istraživanja, ali veći rizik skupljeg puta.</div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-3" open>
+          <summary><span class="q-number">03</span><span>Da li 0-1 BFS može da radi za proizvoljan graf koji ima samo dve cene, na primer 4 i 5?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Ne, ne u opštem slučaju</div>
+            <p>Standardni 0-1 BFS garantuje optimalnost kada su cene grana baš <code>0</code> i <code>1</code>. Može raditi i za <code>0</code> i neku pozitivnu konstantu <code>c</code>, jer se sve cene mogu podeliti sa <code>c</code>. Za 4 i 5 takvo skaliranje nije moguće.</p>
+            <div class="example"><strong>Zašto oduzimanje 4 ne radi:</strong> put A ima jednu granu cene 5, ukupno 5. Put B ima dve grane cene 4, ukupno 8. Ako preslikamo 4 → 0 i 5 → 1, put B dobija cenu 0 i pogrešno izgleda bolji od puta A sa cenom 1. Oduzimanje iste vrednosti po grani menja rezultat kada putevi imaju različit broj grana.</div>
+            <p>U ovoj implementaciji ćelija težine <code>≤ 1</code> postaje grana cene 0, a svaka težina <code>≥ 2</code> postaje cena 1. Zato bi i 4 i 5 postale 1 i razlika bi se izgubila. Za originalne cene 4 i 5 treba koristiti Dijkstrin algoritam.</p>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-4" open>
+          <summary><span class="q-number">04</span><span>Koje su vremenske složenosti svih algoritama i šta znače promenljive?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Oznake</div>
+            <p><code>|V|</code> je broj čvorova, u ovoj aplikaciji broj prohodnih ćelija. <code>|E|</code> je broj grana, odnosno dozvoljenih prelaza između susednih ćelija. Ovo <code>E</code> nije isto što i oznaka za broj proširenih čvorova u rezultatima rada. Na mreži svaki čvor ima najviše četiri ili osam suseda, pa je <code>|E| = O(|V|)</code>.</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Algoritam</th><th>Vreme</th><th>Zašto</th></tr></thead>
+                <tbody>
+                  <tr><td>BFS</td><td><code>O(|V| + |E|)</code></td><td>Svaki čvor i grana obrađuju se najviše konstantan broj puta.</td></tr>
+                  <tr><td>DFS</td><td><code>O(|V| + |E|)</code></td><td>Isti obilazak kao BFS, ali sa stekom.</td></tr>
+                  <tr><td>Dijkstra</td><td><code>O((|V| + |E|) log |V|)</code></td><td>Operacije nad binarnim hipom dodaju logaritamski faktor.</td></tr>
+                  <tr><td>A*</td><td><code>O((|V| + |E|) log |V|)</code></td><td>Ista struktura kao Dijkstra; dobra heuristika smanjuje stvarni broj obrađenih čvorova, ne menja opštu granicu.</td></tr>
+                  <tr><td>Greedy</td><td><code>O((|V| + |E|) log |V|)</code></td><td>Koristi prioritetni red po <code>h(n)</code>.</td></tr>
+                  <tr><td>Swarm</td><td><code>O((|V| + |E|) log |V|)</code></td><td>Koristi isti hip, sa prioritetom <code>g + w·h</code>.</td></tr>
+                  <tr><td>Convergent Swarm</td><td><code>O((|V| + |E|) log |V|)</code></td><td>Isto jezgro kao Swarm, samo veća težina heuristike.</td></tr>
+                  <tr><td>0-1 BFS</td><td><code>O(|V| + |E|)</code></td><td>Dvostrani red zamenjuje prioritetni red kada su cene 0 ili 1.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Pomoćna memorija je <code>O(|V|)</code> za svih osam realizacija. Na ovoj mreži se složenosti sa hipom mogu pojednostavljeno posmatrati kao <code>O(|V| log |V|)</code>.</p>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-5" open>
+          <summary><span class="q-number">05</span><span>Šta koja Python biblioteka radi u našem radu?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Četiri biblioteke, četiri uloge</div>
+            <div class="answer-grid">
+              <div class="answer-block"><strong>Pandas</strong><p>Učitava CSV rezultate u DataFrame, filtrira ih, grupiše po algoritmu i scenariju i pravi zbirne tabele.</p></div>
+              <div class="answer-block"><strong>NumPy</strong><p>Radi sa numeričkim nizovima, vrednostima koje nedostaju, logaritmima i prilagođavanjem linije za skalabilnost.</p></div>
+              <div class="answer-block"><strong>SciPy.stats</strong><p>Daje Studentovu t-vrednost za 95% interval poverenja, Pearsonovu i Spearmanovu korelaciju i Kruskal-Wallisov test.</p></div>
+              <div class="answer-block"><strong>Matplotlib</strong><p>Od obrađenih tabela pravi grafikone za proširenja, skalabilnost, heuristike, ponder, AI i Playground.</p></div>
+            </div>
+            <div class="example"><strong>Najkraće:</strong> Pandas organizuje podatke, NumPy računa nad nizovima, SciPy daje statističke postupke, a Matplotlib rezultat pretvara u sliku.</div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-6" open>
+          <summary><span class="q-number">06</span><span>Koje su metrike za četiri kategorije evaluacije i koja je vrednost svake evaluacije?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Šta je mereno i zašto</div>
+            <div class="answer-grid">
+              <div class="answer-block"><strong>1. Algoritmi</strong><p>Broj proširenih čvorova, maksimalni frontijer, stvarna cena i dužina puta, suboptimalnost, stopa pronalaženja i vreme. Vrednost: poredi efikasnost, memoriju, kvalitet puta i robusnost pod istim uslovima.</p></div>
+              <div class="answer-block"><strong>2. Playground bodovanje</strong><p>Ukupan skor i njegove kazne/bonusi, prosek, minimum i maksimum po tipu igrača, tačnost graničnih slučajeva i razlike po tipu mape. Vrednost: proverava da formula dosledno nagrađuje kvalitetan put i kažnjava greške.</p></div>
+              <div class="answer-block"><strong>3. AI</strong><p>Validnost JSON-a, greške i latencija; tačnost preporuke; tačnost izdvajanja namere i uspeh generatora; validnost i broj trenutaka Tutora. Vrednost: meri gde je model pouzdan i gde rezultat mora ostati pod kontrolom programa.</p></div>
+              <div class="answer-block"><strong>4. Interfejs</strong><p>Ocene prema deset Nielsenovih heuristika, uz dodatni pregled drugih UX principa i tehničkih osobina. Vrednost: sistematski otkriva probleme interakcije pre testiranja sa korisnicima.</p></div>
+            </div>
+            <p><strong>Važna razlika:</strong> algoritmi, bodovanje i AI imaju ponovljiva numerička merenja. Evaluacija interfejsa je stručna heuristička procena autora, ne eksperiment sa stvarnim korisnicima.</p>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-7" open>
+          <summary><span class="q-number">07</span><span>Šta su zaključci evaluacije za svaku kategoriju uspeli da pokažu?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Glavni nalazi</div>
+            <div class="answer-grid">
+              <div class="answer-block"><strong>Algoritmi</strong><p>A* je dao optimalan put uz 62,5% manje proširenja od Dijkstre. Swarm je dao dodatnih 43,5% manje proširenja od A*, uz 2,97% suboptimalnosti. Zaključak: ne postoji najbolji algoritam van konteksta cilja i vrste mape.</p></div>
+              <div class="answer-block"><strong>Playground</strong><p>Skor opada od savršenog ka slabom igraču, a pogrešni odgovori za postojanje puta dosledno daju nulu. Bodovanje reaguje na težinu mape, ali simulacija ne dokazuje da će ga stvarni korisnici doživeti kao intuitivno.</p></div>
+              <div class="answer-block"><strong>AI</strong><p>Format odgovora je bio vrlo pouzdan, ali tačnost numeričkog zaključivanja varirala je od 35,71% do 90%. Generator je nameru razumeo u 100% slučajeva, a odgovarajuću mapu našao u 66%. Najpouzdaniji je Tutor, jer program bira činjenice, a AI ih objašnjava.</p></div>
+              <div class="answer-block"><strong>Interfejs</strong><p>Osam Nielsenovih heuristika ocenjeno je kao ispunjeno, a dve kao delimično ispunjene. Uočeni su nedostatak opšteg poništavanja i previše opšte mrežne greške. Nalaz je sistematska samoprocena, ne potvrda stvarnih korisnika.</p></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-8" open>
+          <summary><span class="q-number">08</span><span>Na koji način je program birao „bitne trenutke” u izvršavanju algoritma?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Deterministički, iz stvarnog traga</div>
+            <p><code>VisualizationService</code> prolazi kroz već izračunat trag i prati broj obrađenih čvorova, veličinu frontijera i korak završetka. Zatim bira do pet trenutaka:</p>
+            <ol>
+              <li>ranu fazu, oko 10% koraka;</li>
+              <li>korak najvećeg frontijera;</li>
+              <li>sredinu, oko 50% koraka;</li>
+              <li>kasnu fazu, oko 80%, ako je pre završetka;</li>
+              <li>pronađen put ili potvrđen neuspeh.</li>
+            </ol>
+            <p>Duplikati se preskaču, na primer ako vrhunac frontijera padne tačno na sredinu. Uz svaki trenutak program šalje stvarne brojeve, a AI dobija zadatak samo da ih objasni i da zadrži iste indekse koraka.</p>
+            <div class="example"><strong>Primer:</strong> „Korak 42: frontijer je dostigao 31 čvor, a 27 je već obrađeno.” Program bira i meri taj trenutak; AI objašnjava zašto je rast frontijera važan.</div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-9" open>
+          <summary><span class="q-number">09</span><span>Da li na bilo koji način proveravamo ili validiramo AI odgovor?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Da, ali ne proveravamo svaku rečenicu</div>
+            <ul>
+              <li><strong>Ulaz:</strong> Zod proverava oblik, tipove i granice korisničkog zahteva; rute imaju autentikaciju i ograničenje učestalosti.</li>
+              <li><strong>Format izlaza:</strong> server zahteva JSON i pokušava <code>JSON.parse</code>. Neispravan JSON daje grešku ili prazan rezervni rezultat, zavisno od rute.</li>
+              <li><strong>Programske činjenice:</strong> preporuka i generator pokreću stvarne algoritme; mapa, put, cene i najbolji/najgori rezultat dolaze iz programa, ne iz modela.</li>
+              <li><strong>Tutor:</strong> program unapred bira trenutke; klijent ograničava vraćeni indeks na opseg traga i koristi programske trenutke ako AI ne vrati nijedan.</li>
+              <li><strong>Robusnost:</strong> kod ograničenja servisa postoji prelazak na drugi model, a korisnik dobija poruku kada poziv ne uspe.</li>
+              <li><strong>Naknadna evaluacija:</strong> benchmark poredi odgovore sa stvarnim rezultatima i meri validnost, tačnost i latenciju.</li>
+            </ul>
+            <p><strong>Granica:</strong> ne postoji opšti semantički proveravač koji čita svaku AI rečenicu i dokazuje da je objašnjenje tačno. Validan JSON nije isto što i tačan sadržaj. Zato proverljive brojke ostaju programski izračunate.</p>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-10" open>
+          <summary><span class="q-number">10</span><span>Koja je razlika između Tailwind CSS-a i PostCSS-a?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Sadržaj naspram obrade</div>
+            <p><strong>Tailwind CSS</strong> je sistem koji daje pomoćne klase kao što su <code>flex</code>, <code>p-4</code> ili klase za boju. Na osnovu korišćenih klasa generiše konkretan CSS.</p>
+            <p><strong>PostCSS</strong> je alat koji uz pomoć dodataka čita i transformiše CSS tokom build procesa. On sam ne donosi dizajn niti skup klasa.</p>
+            <p>U projektu je <code>@tailwindcss/postcss</code> registrovan kao PostCSS dodatak, dok skripte <code>tw</code> i <code>tw:watch</code> mogu direktno pokrenuti Tailwind CLI i napraviti <code>tailwind-output.css</code>.</p>
+            <div class="example"><strong>Analogija:</strong> Tailwind određuje koje „građevinske elemente” stilova želimo, a PostCSS je mašina koja CSS obrađuje pre isporuke pregledaču.</div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-11" open>
+          <summary><span class="q-number">11</span><span>Koja je razlika između Node.js-a i Express-a?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Okruženje naspram biblioteke</div>
+            <p><strong>Node.js</strong> je izvršno okruženje koje omogućava da JavaScript radi van pregledača. Ono daje pristup mreži, fajlovima, procesima i ugrađenom HTTP serveru.</p>
+            <p><strong>Express</strong> je biblioteka koja radi unutar Node.js-a i pojednostavljuje pravljenje veb-servera: rute, middleware, obradu zahteva i slanje odgovora.</p>
+            <div class="example"><strong>U projektu:</strong> Node.js pokreće serverski proces, a Express definiše, na primer, šta se izvršava kada stigne <code>POST /api/ai/recommend</code>. Express bez Node.js-a ovde ne može da radi; Node.js može bez Express-a, ali bi HTTP logika bila opširnija.</div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-12" open>
+          <summary><span class="q-number">12</span><span>Da li Socket.IO komunikacija ide preko REST-a, gRPC-a ili nečeg trećeg?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Poseban event protokol</div>
+            <p>Socket.IO nije REST niti gRPC. To je sopstveni protokol događaja izgrađen preko Engine.IO transporta. U podrazumevanoj konfiguraciji veza obično počinje HTTP long-polling rukovanjem i, kada je moguće, prelazi na trajnu WebSocket vezu.</p>
+            <p>REST i Socket.IO zato postoje paralelno. REST obrađuje pojedinačne zahtev-odgovor operacije kao što su prijava, mape i AI pozivi. Socket.IO drži dvosmernu vezu i u ovom projektu služi za događaj <code>leaderboard:update</code>. gRPC se ne koristi.</p>
+            <div class="example"><strong>Primer:</strong> slanje Playground pokušaja ide REST zahtevom. Kada rezultat promeni rang-listu, server preko postojeće Socket.IO veze obavesti povezane klijente da osveže prikaz.</div>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-13" open>
+          <summary><span class="q-number">13</span><span>Šta je zagrevanje pre merenja vremena i zašto kasniji JavaScript kod bude brže izvršen?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Uklanjanje efekta hladnog starta</div>
+            <p>V8 prvo brzo pripremi kod za izvršavanje, a funkcije koje se često ponavljaju naknadno prevede i optimizuje kao „vruće” putanje. Tokom prvih pokretanja popunjavaju se i interne strukture i keševi. Zato prvi rezultat može meriti i trošak pripreme okruženja, a ne samo algoritam.</p>
+            <p>U benchmarku se pre svake kategorije svaki algoritam pokrene <strong>30 puta</strong> nad pomoćnom mapom, a ta vremena se odbace. Tek zatim počinje pravo merenje. U radu je najveće vreme Dijkstre na standardnoj mreži posle toga palo sa 5,46 ms na 0,49 ms.</p>
+            <p>Zagrevanje ne menja algoritam niti garantuje da će svako kasnije pokretanje biti brže. Ono samo čini poređenje stabilnijim i manje zavisnim od prvog JIT prevođenja.</p>
+          </div>
+        </details>
+
+        <details class="qa" id="pitanje-14" open>
+          <summary><span class="q-number">14</span><span>Šta su interval poverenja, rasipanje i standardna devijacija?</span></summary>
+          <div class="answer">
+            <div class="answer-label">Tri povezana pojma</div>
+            <p><strong>Rasipanje</strong> je opšti naziv za to koliko su rezultati međusobno udaljeni. Nije jedna posebna formula. Malo rasipanje znači da su ponavljanja slična; veliko da rezultat dosta zavisi od konkretne mape ili pokretanja.</p>
+            <p><strong>Standardna devijacija</strong> je konkretna mera rasipanja. Približno govori koliko tipičan rezultat odstupa od proseka. Ako su svi rezultati isti, jednaka je nuli.</p>
+            <div class="formula">s = √( Σ(xᵢ - x̄)² / (n - 1) )</div>
+            <p><strong>95% interval poverenja</strong> opisuje preciznost procenjenog proseka. U radu je prikazana njegova poluširina:</p>
+            <div class="formula">Δ = t<sub>0,975; n-1</sub> · s / √n, pa se rezultat piše kao x̄ ± Δ</div>
+            <p>Ispravno tumačenje je: kada bismo mnogo puta ponovili ceo postupak uzorkovanja, približno 95% tako dobijenih intervala sadržalo bi stvarnu srednju vrednost. Uži interval znači precizniju procenu.</p>
+            <div class="example"><strong>Primer:</strong> rezultat <code>219 ± 8</code> ima prosek 219 proširenih čvorova, a interval od približno 211 do 227. Standardna devijacija opisuje razlike među pojedinačnim pokretanjima; interval poverenja opisuje koliko smo precizno procenili njihov prosek. Više ponavljanja obično sužava interval jer se deli sa <code>√n</code>.</div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <footer>
+      Predrag Pešić · Završni sažetak za odbranu · Provereno prema implementaciji i rezultatima rada
+    </footer>
+  </main>
+
+  <script>
+    const root = document.documentElement;
+    const progress = document.getElementById("progress-bar");
+    const picker = document.getElementById("section-picker");
+    const answerToggle = document.getElementById("toggle-answers");
+    const questions = Array.from(document.querySelectorAll("details.qa"));
+    let answersHidden = false;
+
+    picker.addEventListener("change", () => {
+      document.getElementById(picker.value)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    function changeSize(delta) {
+      const current = Number.parseFloat(getComputedStyle(root).getPropertyValue("--reading-size"));
+      root.style.setProperty("--reading-size", `${Math.min(23, Math.max(15, current + delta))}px`);
+    }
+
+    document.getElementById("smaller").addEventListener("click", () => changeSize(-1));
+    document.getElementById("larger").addEventListener("click", () => changeSize(1));
+
+    answerToggle.addEventListener("click", () => {
+      answersHidden = !answersHidden;
+      questions.forEach(question => { question.open = !answersHidden; });
+      answerToggle.textContent = answersHidden ? "Prikaži" : "Sakrij";
+      answerToggle.setAttribute("aria-pressed", String(answersHidden));
+    });
+
+    function updateProgress() {
+      const scrollable = document.documentElement.scrollHeight - innerHeight;
+      const percentage = scrollable > 0 ? (scrollY / scrollable) * 100 : 0;
+      progress.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+    }
+
+    addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+  </script>
+</body>
+</html>
